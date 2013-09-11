@@ -145,15 +145,18 @@ public final class MavenRepository
   private static MavenResponse createResult(
       final PreorderNodeListGenerator generator)
   {
-    final MavenResponse env = new MavenResponse();
+    final MavenResponse response = new MavenResponse();
     final List<DependencyNode> nodes = generator.getNodes();
 
     for (final DependencyNode node : nodes)
     {
       final Dependency dependency = node.getDependency();
-      env.add(dependency);
+      if (!"test".equals(dependency.getScope())) // FIXME: Workaround..
+      {
+        response.add(dependency);
+      }
     }
-    return env;
+    return response;
   }
 
   // --- object basics --------------------------------------------------------

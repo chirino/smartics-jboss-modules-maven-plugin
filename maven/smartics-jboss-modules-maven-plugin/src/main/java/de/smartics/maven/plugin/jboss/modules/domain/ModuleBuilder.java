@@ -177,11 +177,12 @@ public final class ModuleBuilder
       else
       {
         context.getLog().warn(
-            "Cannot copy non-existing remote file: " + remoteFile);
+            String.format(
+                "Cannot copy non-existing remote file for dependency '%s'.",
+                dependency.getArtifact()));
       }
     }
   }
-
   // --- object basics --------------------------------------------------------
 
 }

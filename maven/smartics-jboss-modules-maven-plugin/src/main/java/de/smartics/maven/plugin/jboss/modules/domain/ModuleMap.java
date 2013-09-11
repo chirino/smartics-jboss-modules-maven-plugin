@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.NotThreadSafe;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.sonatype.aether.artifact.Artifact;
 import org.sonatype.aether.graph.Dependency;
 
@@ -61,8 +61,8 @@ public final class ModuleMap
   /**
    * Maps a dependency to its module.
    */
-  private final Map<Dependency, Module> dependency2Module =
-      new HashMap<Dependency, Module>();
+  private final Map<DependencyKey, Module> dependency2Module =
+      new HashMap<DependencyKey, Module>();
 
   // ****************************** Initializer *******************************
 
@@ -104,6 +104,81 @@ public final class ModuleMap
 
   // ****************************** Inner Classes *****************************
 
+  /**
+   * Makes dependencies equal according to the referenced artifact.
+   */
+  private static final class DependencyKey
+  {
+    // ******************************** Fields ********************************
+
+    // --- constants ----------------------------------------------------------
+
+    // --- members ------------------------------------------------------------
+
+    /**
+     * The wrapped dependency.
+     */
+    private final Dependency dependency;
+
+    // ***************************** Initializer ******************************
+
+    // ***************************** Constructors *****************************
+
+    private DependencyKey(final Dependency dependency)
+    {
+      this.dependency = dependency;
+    }
+
+    // ***************************** Inner Classes ****************************
+
+    // ******************************** Methods *******************************
+
+    // --- init ---------------------------------------------------------------
+
+    // --- get&set ------------------------------------------------------------
+
+    // --- business -----------------------------------------------------------
+
+    // --- object basics ------------------------------------------------------
+
+    @Override
+    public int hashCode()
+    {
+      return dependency.getArtifact().hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object object)
+    {
+      if (this == object)
+      {
+        return true;
+      }
+      else if (object == null || getClass() != object.getClass())
+      {
+        return false;
+      }
+
+      final ModuleMap.DependencyKey other = (ModuleMap.DependencyKey) object;
+
+      final Artifact artifact = dependency.getArtifact();
+      final Artifact otherArtifact = other.dependency.getArtifact();
+
+      return checkArtifactsWithoutProperties(artifact, otherArtifact);
+    }
+
+    private boolean checkArtifactsWithoutProperties(final Artifact artifact,
+        final Artifact otherArtifact)
+    {
+      return (artifact.getArtifactId().equals(otherArtifact.getArtifactId())
+              && artifact.getGroupId().equals(otherArtifact.getGroupId())
+              && artifact.getVersion().equals(otherArtifact.getVersion())
+              && artifact.getExtension().equals(otherArtifact.getExtension())
+              && artifact.getClassifier().equals(otherArtifact.getClassifier()) && ObjectUtils
+          .equals(artifact.getFile(), otherArtifact.getFile()));
+    }
+  }
+
   // ********************************* Methods ********************************
 
   // --- init -----------------------------------------------------------------
@@ -123,7 +198,7 @@ public final class ModuleMap
    *
    * @return the map of modules.
    */
-  public Map<Module, List<Dependency>> toMap()
+  public synchronized Map<Module, List<Dependency>> toMap()
   {
     final Map<Module, List<Dependency>> map =
         new LinkedHashMap<Module, List<Dependency>>();
@@ -146,9 +221,23 @@ public final class ModuleMap
    * @param dependency the dependency to add.
    * @return the module the dependency is associated with.
    */
-  public Module add(final Dependency dependency)
+  public synchronized Module add(final Dependency dependency)
   {
-    final Module alreadyStoredModule = dependency2Module.get(dependency);
+    final DependencyKey key = new DependencyKey(dependency);
+    final Module alreadyStoredModule = dependency2Module.get(key);
+    if (alreadyStoredModule != null)
+    {
+      return alreadyStoredModule;
+    }
+
+    final Module module = calcModule(key);
+    storeArtifact(module, dependency);
+    return module;
+  }
+
+  private Module calcModule(final DependencyKey key)
+  {
+    final Module alreadyStoredModule = dependency2Module.get(key);
     if (alreadyStoredModule != null)
     {
       return alreadyStoredModule;
@@ -156,32 +245,30 @@ public final class ModuleMap
 
     for (final Module module : modules)
     {
-      final MatchContext matchContext = module.match(dependency.getArtifact());
+      final MatchContext matchContext =
+          module.match(key.dependency.getArtifact());
       if (matchContext.isMatched())
       {
         if (matchContext.hasGroupMatch())
         {
           final Module newModule = createModule(matchContext, module);
-          storeArtifact(newModule, dependency);
           return newModule;
         }
         else
         {
-          storeArtifact(module, dependency);
           return module;
         }
       }
     }
 
-    final Module module = createModule(dependency);
-    storeArtifact(module, dependency);
+    final Module module = createModule(key.dependency);
     return module;
   }
 
   private void storeArtifact(final Module module, final Dependency dependency)
   {
     module2Dependency.put(module, dependency);
-    dependency2Module.put(dependency, module);
+    dependency2Module.put(new DependencyKey(dependency), module);
   }
 
   private Module createModule(final MatchContext matchContext,
@@ -245,14 +332,14 @@ public final class ModuleMap
    * @param dependency the artifact whose module is requested.
    * @return the module of the dependency.
    */
-  @CheckForNull
-  public Module getModule(final Dependency dependency)
+  public synchronized Module getModule(final Dependency dependency)
   {
-    Module module = dependency2Module.get(dependency);
+    final DependencyKey key = new DependencyKey(dependency);
+    Module module = dependency2Module.get(key);
 
-    if(module == null)
+    if (module == null)
     {
-      module = add(dependency);
+      module = calcModule(key);
     }
     return module;
   }

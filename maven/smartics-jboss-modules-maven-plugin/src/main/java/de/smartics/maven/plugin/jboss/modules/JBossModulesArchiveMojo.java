@@ -57,6 +57,7 @@ import de.smartics.maven.plugin.jboss.modules.aether.Mapper;
 import de.smartics.maven.plugin.jboss.modules.aether.MavenRepository;
 import de.smartics.maven.plugin.jboss.modules.aether.MavenResponse;
 import de.smartics.maven.plugin.jboss.modules.aether.MojoRepositoryBuilder;
+import de.smartics.maven.plugin.jboss.modules.aether.TestScopeFilter;
 import de.smartics.maven.plugin.jboss.modules.domain.ExecutionContext;
 import de.smartics.maven.plugin.jboss.modules.domain.ModuleBuilder;
 import de.smartics.maven.plugin.jboss.modules.domain.ModuleMap;
@@ -251,7 +252,8 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
         .toMap().entrySet())
     {
       final Module module = entry.getKey();
-      final List<Dependency> moduleDependencies = entry.getValue();
+      final Collection<Dependency> moduleDependencies =
+          new HashSet<Dependency>(entry.getValue());
       final ModuleBuilder builder =
           new ModuleBuilder(context, module, moduleDependencies);
       try
@@ -315,6 +317,7 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private ExecutionContext createContext(final List<Dependency> dependencies)
   {
     final ExecutionContext.Builder builder = new ExecutionContext.Builder();
+    builder.with(getLog());
     builder.withTargetFolder(targetFolder);
 
     final TransitiveDependencyResolver resolver =
@@ -392,6 +395,8 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   {
     final List<DependencyFilter> dependencyFilters =
         new ArrayList<DependencyFilter>();
+    dependencyFilters.add(new TestScopeFilter());
+
     final MojoRepositoryBuilder builder = new MojoRepositoryBuilder();
     builder.with(repositorySystem).with(repositorySession).with(remoteRepos)
         .withDependencyFilters(dependencyFilters).withOffline(offline).build();
