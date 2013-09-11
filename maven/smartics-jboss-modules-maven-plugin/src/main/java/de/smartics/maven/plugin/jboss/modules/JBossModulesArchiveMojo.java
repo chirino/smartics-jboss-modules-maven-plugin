@@ -183,6 +183,18 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private boolean offline;
 
   /**
+   * Controls the update policy according the access of the remote repositories.
+   * <p>
+   * Allowed values are <code>never</code>, <code>always</code>, and
+   * <code>daily</code>.
+   * </p>
+   *
+   * @since 1.0
+   */
+  @Parameter(property = "smartics-jboss-modules.update", defaultValue = "never")
+  private String updatePolicy;
+
+  /**
    * The name of the default slot to write to. If not specified, the major
    * version of the dependency will be used as slot value.
    *
@@ -278,6 +290,8 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
         new AndDependencySelector(new ScopeDependencySelector("test"),
             new OptionalDependencySelector(), new ExclusionDependencySelector());
     session.setDependencySelector(selector);
+    session.setUpdatePolicy(updatePolicy);
+    session.setOffline(offline);
     return session;
   }
 
