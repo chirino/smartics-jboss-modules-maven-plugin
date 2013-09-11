@@ -1,0 +1,269 @@
+/*
+ * Copyright 2013 smartics, Kronseder & Reiner GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.smartics.maven.plugin.jboss.modules.xml;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.apache.commons.lang.StringUtils;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.Namespace;
+import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.graph.Dependency;
+
+import de.smartics.maven.plugin.jboss.modules.Module;
+import de.smartics.maven.plugin.jboss.modules.domain.ExecutionContext;
+import de.smartics.maven.plugin.jboss.modules.domain.SlotStrategy;
+import edu.emory.mathcs.backport.java.util.Collections;
+
+/**
+ * Creates <code>module.xml</code> descriptors for JBoss modules.
+ */
+public final class ModuleXmlBuilder
+{
+  // ********************************* Fields *********************************
+
+  // --- constants ------------------------------------------------------------
+
+  /**
+   * The default namespace for the <code>module.xml</code> descriptor.
+   */
+  public static final Namespace NS = Namespace
+      .getNamespace("urn:jboss:module:1.1");
+
+  // --- members --------------------------------------------------------------
+
+  /**
+   * The context and configuration to control the building of XML files.
+   */
+  private final ExecutionContext context;
+
+  /**
+   * The XML document.
+   */
+  private final Document document;
+
+  /**
+   * The root element of the document.
+   */
+  private final Element root;
+
+  // ****************************** Initializer *******************************
+
+  // ****************************** Constructors ******************************
+
+  /**
+   * Default constructor.
+   *
+   * @param context the context and configuration to control the building of XML
+   *          files.
+   * @param module the module to build.
+   * @param dependencies the dependencies to reference.
+   */
+  public ModuleXmlBuilder(final ExecutionContext context, final Module module,
+      final Collection<Dependency> dependencies)
+  {
+    this.context = context;
+    root = new Element("module", NS);
+    root.setAttribute("name", module.getName());
+    final String slot = module.getSlot();
+    if (StringUtils.isNotBlank(slot))
+    {
+      root.setAttribute("slot", slot);
+    }
+    document = new Document(root);
+
+    addProperties(module);
+    addResources(dependencies);
+    addDependencies(module, dependencies);
+  }
+
+  // ****************************** Inner Classes *****************************
+
+  /**
+   * Helper to sort artifact lists.
+   */
+  private static final class SortElement implements Comparable<SortElement>
+  {
+    /**
+     * The key used for sorting.
+     */
+    private final String key;
+
+    /**
+     * The dependency to be sorted.
+     */
+    private final Dependency dependency;
+
+    private SortElement(final String key, final Dependency dependency)
+    {
+      this.key = key;
+      this.dependency = dependency;
+    }
+
+    @Override
+    public int compareTo(final SortElement o)
+    {
+      return key.compareTo(o.key);
+    }
+
+  }
+
+  // ********************************* Methods ********************************
+
+  // --- init -----------------------------------------------------------------
+
+  private void addProperties(final Module module)
+  {
+    final Map<String, String> properties = module.getProperties();
+    if (properties != null && !properties.isEmpty())
+    {
+      final Element propertiesElement = new Element("properties", NS);
+      for (final Entry<String, String> entry : properties.entrySet())
+      {
+        final Element property = new Element("property", NS);
+        property.setAttribute("name", entry.getKey());
+        property.setAttribute("value", entry.getValue());
+        propertiesElement.addContent(property);
+      }
+
+      root.addContent(propertiesElement);
+    }
+  }
+
+  private void addResources(final Collection<Dependency> dependencies)
+  {
+    if (!dependencies.isEmpty())
+    {
+      final Element resources = new Element("resources", NS);
+
+      final List<SortElement> sorted = createSortedResources(dependencies);
+      for (final SortElement element : sorted)
+      {
+        final Element resource = new Element("resource-root", NS);
+        final String fileName = element.key;
+        resource.setAttribute("path", fileName);
+        resources.addContent(resource);
+      }
+
+      root.addContent(resources);
+    }
+  }
+
+  private List<SortElement> createSortedResources(
+      final Collection<Dependency> dependencies)
+  {
+    final List<SortElement> sorted =
+        new ArrayList<SortElement>(dependencies.size());
+    for (final Dependency dependency : dependencies)
+    {
+      final Artifact artifact = dependency.getArtifact();
+      final File file = artifact.getFile();
+      if (file != null)
+      {
+        final String fileName = file.getName();
+        sorted.add(new SortElement(fileName, dependency));
+      }
+    }
+    Collections.sort(sorted);
+    return sorted;
+  }
+
+  private void addDependencies(final Module module,
+      final Collection<Dependency> dependencies)
+  {
+    if (!dependencies.isEmpty())
+    {
+      final Element dependenciesElement = new Element("dependencies", NS);
+      final Set<SortElement> sorted = new TreeSet<SortElement>();
+      for (final Dependency dependency : dependencies)
+      {
+        final Set<Dependency> resolvedDependencies =
+            context.resolve(dependency);
+        addSortedDependencies(sorted, module, resolvedDependencies);
+      }
+
+      for (final SortElement element : sorted)
+      {
+        final String name = element.key;
+        final Element moduleElement = new Element("module", NS);
+        moduleElement.setAttribute("name", name);
+        if (element.dependency.isOptional())
+        {
+          moduleElement.setAttribute("optional", "true");
+        }
+        final SlotStrategy slotStrategy = context.getSlotStrategy();
+        if (slotStrategy != SlotStrategy.MAIN)
+        {
+          final String slot =
+              slotStrategy.calcSlot(element.dependency.getArtifact());
+          moduleElement.setAttribute("slot", slot);
+        }
+        dependenciesElement.addContent(moduleElement);
+      }
+
+      root.addContent(dependenciesElement);
+    }
+  }
+
+  private void addSortedDependencies(final Set<SortElement> sorted,
+      final Module owningModule, final Set<Dependency> dependencies)
+  {
+    for (final Dependency dependency : dependencies)
+    {
+      try
+      {
+        final Module module = context.getModule(dependency);
+        final String name = module.getName();
+        if (!name.equals(owningModule.getName()))
+        {
+          sorted.add(new SortElement(name, dependency));
+        }
+      }
+      catch (final IllegalArgumentException e)
+      {
+        context.getLog().error(
+            String.format("Skipping '%s' referenced from module '%s'.",
+                dependency.getArtifact().getArtifactId(),
+                owningModule.getName()));
+      }
+    }
+  }
+
+  // --- get&set --------------------------------------------------------------
+
+  /**
+   * Returns the XML document.
+   *
+   * @return the XML document.
+   */
+  public Document getDocument()
+  {
+    return document;
+  }
+
+  // --- business -------------------------------------------------------------
+
+  // --- object basics --------------------------------------------------------
+
+}
