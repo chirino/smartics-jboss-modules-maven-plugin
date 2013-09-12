@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-def base = 'target/jboss-modules/org/ccil/cowan/tagsoup/main'
-def artifactFile = new File(basedir, base + '/tagsoup-0.9.7.jar')
+def base = 'target/jboss-modules/org/jgroups/main'
+def artifactFile = new File(basedir, base + '/jgroups-3.2.7.Final.jar')
 assert artifactFile.exists()
+
+
+def optionalBase = 'target/jboss-modules/org/beanshell/bsh/main'
+def file = new File(basedir, optionalBase + '/bsh-2.0b5.jar')
+assert file.exists()
