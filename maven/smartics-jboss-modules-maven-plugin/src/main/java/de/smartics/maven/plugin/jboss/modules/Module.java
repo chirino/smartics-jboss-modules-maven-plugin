@@ -81,6 +81,12 @@ public class Module
    */
   private List<Dependency> dependencies;
 
+  /**
+   * The flag to skip the export of the module. This allows to rename a
+   * dependency to an existing module in JBoss, but not to create a module.
+   */
+  private boolean skip;
+
   // ****************************** Initializer *******************************
 
   // ****************************** Constructors ******************************
@@ -309,6 +315,28 @@ public class Module
       }
     }
     return new MatchContext(false);
+  }
+
+  /**
+   * Returns the flag to skip the export of the module. This allows to rename a
+   * dependency to an existing module in JBoss, but not to create a module.
+   *
+   * @return the flag to skip the export of the module.
+   */
+  public boolean isSkip()
+  {
+    return skip;
+  }
+
+  /**
+   * Sets the flag to skip the export of the module. This allows to rename a
+   * dependency to an existing module in JBoss, but not to create a module.
+   *
+   * @param skip the flag to skip the export of the module.
+   */
+  public void setSkip(final boolean skip)
+  {
+    this.skip = skip;
   }
 
   // --- object basics --------------------------------------------------------

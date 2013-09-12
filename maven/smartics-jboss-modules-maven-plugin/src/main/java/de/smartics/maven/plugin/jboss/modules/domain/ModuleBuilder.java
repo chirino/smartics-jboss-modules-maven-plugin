@@ -100,9 +100,12 @@ public final class ModuleBuilder
    */
   public void create() throws IOException
   {
-    final File moduleFolder = createModuleFolder();
-    createModuleXml(moduleFolder);
-    copyResources(moduleFolder);
+    if (!module.isSkip())
+    {
+      final File moduleFolder = createModuleFolder();
+      createModuleXml(moduleFolder);
+      copyResources(moduleFolder);
+    }
   }
 
   private File createModuleFolder() throws IOException
