@@ -81,12 +81,12 @@ public final class GaExclusionFilter implements Serializable, DependencyFilter
     }
 
     final Artifact artifact = dependency.getArtifact();
-
     for (final Clusion exclusion : exclusions)
     {
       final boolean exclude = exclusion.matches(artifact).isMatched();
-      if(exclude)
+      if (exclude)
       {
+        DependencyFlagger.INSTANCE.flag(node);
         return false;
       }
     }

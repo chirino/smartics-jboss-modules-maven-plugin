@@ -15,37 +15,44 @@
  */
 package de.smartics.maven.plugin.jboss.modules.aether.filter;
 
-import java.io.Serializable;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.sonatype.aether.artifact.Artifact;
 import org.sonatype.aether.graph.Dependency;
-import org.sonatype.aether.graph.DependencyFilter;
 import org.sonatype.aether.graph.DependencyNode;
 
 /**
- * Rejects dependencies of scope <tt>test</tt>.
+ * Adds properties to artifacts of a dependency.
  */
-public final class TestScopeFilter implements Serializable, DependencyFilter
+public final class DependencyFlagger
 {
   // ********************************* Fields *********************************
 
   // --- constants ------------------------------------------------------------
 
   /**
-   * The class version identifier.
+   * The name of the reject flag.
    */
-  private static final long serialVersionUID = 1L;
-
-  /**
-   * The singleton instance since the filter has no state.
-   */
-  public static final TestScopeFilter INSTANCE = new TestScopeFilter();
+  private static final String REJECT_FLAG = "smartics.collect.reject";
 
   // --- members --------------------------------------------------------------
+
+  /**
+   * A singleton to reuse.
+   */
+  public static final DependencyFlagger INSTANCE = new DependencyFlagger();
 
   // ****************************** Initializer *******************************
 
   // ****************************** Constructors ******************************
+
+  /**
+   * Default constructor.
+   */
+  public DependencyFlagger()
+  {
+  }
 
   // ****************************** Inner Classes *****************************
 
@@ -57,23 +64,39 @@ public final class TestScopeFilter implements Serializable, DependencyFilter
 
   // --- business -------------------------------------------------------------
 
-  @Override
-  public boolean accept(final DependencyNode node,
-      final List<DependencyNode> parents)
+  /**
+   * Flags the artifact as being rejects.
+   *
+   * @param node the node of the dependency to flag.
+   */
+  public void flag(final DependencyNode node)
   {
     final Dependency dependency = node.getDependency();
-    if (dependency == null)
-    {
-      return false;
-    }
+    final Artifact artifact = dependency.getArtifact();
+    node.setArtifact(flagRejection(artifact));
+  }
 
-    final String scope = dependency.getScope();
-    final boolean accept = !("test".equals(scope));
-    if (!accept)
-    {
-      DependencyFlagger.INSTANCE.flag(node);
-    }
-    return accept;
+  /**
+   * Checks if the given dependency is flagged as its artifact being rejected.
+   *
+   * @param dependency the dependency to check.
+   * @return <code>true</code> of the artifact of this dependency is rejected,
+   *         <code>false</code> otherwise.
+   */
+  public boolean isFlagged(final Dependency dependency)
+  {
+    final Artifact artifact = dependency.getArtifact();
+    final boolean flagged =
+        "true".equals(artifact.getProperty(REJECT_FLAG, null));
+    return flagged;
+  }
+
+  private Artifact flagRejection(final Artifact artifact)
+  {
+    final Map<String, String> properties =
+        new HashMap<String, String>(artifact.getProperties());
+    properties.put(REJECT_FLAG, "true");
+    return artifact.setProperties(properties);
   }
 
   // --- object basics --------------------------------------------------------

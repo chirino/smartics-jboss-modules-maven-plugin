@@ -70,6 +70,10 @@ public final class DirectDependenciesOnlyFilter implements Serializable,
     }
 
     final boolean isDirect = parents.size() <= 1;
+    if (!isDirect)
+    {
+      DependencyFlagger.INSTANCE.flag(node);
+    }
     return isDirect;
   }
 

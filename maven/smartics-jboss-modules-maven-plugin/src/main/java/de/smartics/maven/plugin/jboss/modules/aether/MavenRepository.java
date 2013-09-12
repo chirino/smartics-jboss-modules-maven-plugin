@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.sonatype.aether.RepositorySystem;
 import org.sonatype.aether.RepositorySystemSession;
+import org.sonatype.aether.artifact.Artifact;
 import org.sonatype.aether.collection.CollectRequest;
 import org.sonatype.aether.graph.Dependency;
 import org.sonatype.aether.graph.DependencyFilter;
@@ -31,6 +32,7 @@ import org.sonatype.aether.resolution.DependencyResult;
 import org.sonatype.aether.util.filter.AndDependencyFilter;
 import org.sonatype.aether.util.graph.PreorderNodeListGenerator;
 
+import de.smartics.maven.plugin.jboss.modules.aether.filter.DependencyFlagger;
 import de.smartics.maven.plugin.jboss.modules.aether.filter.DirectDependenciesOnlyFilter;
 
 /**
@@ -161,7 +163,9 @@ public final class MavenRepository
     for (final DependencyNode node : nodes)
     {
       final Dependency dependency = node.getDependency();
-      if (dependency.getArtifact().getFile() != null)
+      final Artifact artifact = dependency.getArtifact();
+      if (!(artifact.getFile() == null || DependencyFlagger.INSTANCE
+          .isFlagged(dependency)))
       {
         response.add(dependency);
       }
