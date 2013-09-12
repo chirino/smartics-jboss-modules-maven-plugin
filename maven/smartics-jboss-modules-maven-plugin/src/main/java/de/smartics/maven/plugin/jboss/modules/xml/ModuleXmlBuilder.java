@@ -219,37 +219,85 @@ public final class ModuleXmlBuilder
   private void addDependencies(final Module module,
       final Collection<Dependency> dependencies)
   {
-    if (!dependencies.isEmpty())
+    if (!dependencies.isEmpty() || module.hasDependencies())
     {
       final Element dependenciesElement = new Element("dependencies", NS);
-      final Set<SortElement> sorted = new TreeSet<SortElement>();
-      for (final Dependency dependency : dependencies)
-      {
-        final List<Dependency> resolvedDependencies =
-            context.resolve(dependency);
-        addSortedDependencies(sorted, module, resolvedDependencies);
-      }
 
-      for (final SortElement element : sorted)
+      addResolvedDependencies(module, dependencies, dependenciesElement);
+      addStaticDependencies(module, dependenciesElement);
+
+      root.addContent(dependenciesElement);
+    }
+  }
+
+  private void addResolvedDependencies(final Module module,
+      final Collection<Dependency> dependencies,
+      final Element dependenciesElement)
+  {
+    final Set<SortElement> sorted = new TreeSet<SortElement>();
+    for (final Dependency dependency : dependencies)
+    {
+      final List<Dependency> resolvedDependencies = context.resolve(dependency);
+      addSortedDependencies(sorted, module, resolvedDependencies);
+    }
+
+    for (final SortElement element : sorted)
+    {
+      final String name = element.key;
+      final Element moduleElement = new Element("module", NS);
+      moduleElement.setAttribute("name", name);
+      if (element.dependency.isOptional())
       {
-        final String name = element.key;
+        moduleElement.setAttribute("optional", "true");
+      }
+      final SlotStrategy slotStrategy = context.getSlotStrategy();
+      if (slotStrategy != SlotStrategy.MAIN)
+      {
+        final String slot =
+            slotStrategy.calcSlot(element.dependency.getArtifact());
+        moduleElement.setAttribute("slot", slot);
+      }
+      dependenciesElement.addContent(moduleElement);
+    }
+  }
+
+  private void addStaticDependencies(final Module module,
+      final Element dependenciesElement)
+  {
+    if (module.hasDependencies())
+    {
+      final List<de.smartics.maven.plugin.jboss.modules.Dependency> dependencies =
+          module.getDependencies();
+      for (final de.smartics.maven.plugin.jboss.modules.Dependency dependency : dependencies)
+      {
         final Element moduleElement = new Element("module", NS);
+        final String name = dependency.getName();
+        if (StringUtils.isBlank(name))
+        {
+          continue;
+        }
         moduleElement.setAttribute("name", name);
-        if (element.dependency.isOptional())
+
+        final String slot = dependency.getSlot();
+        if (StringUtils.isNotBlank(slot))
+        {
+          moduleElement.setAttribute("slot", slot);
+        }
+        if (dependency.isExport())
+        {
+          moduleElement.setAttribute("export", "true");
+        }
+        final String services = dependency.getServices();
+        if (StringUtils.isNotBlank(services))
+        {
+          moduleElement.setAttribute("services", services);
+        }
+        if (dependency.isOptional())
         {
           moduleElement.setAttribute("optional", "true");
         }
-        final SlotStrategy slotStrategy = context.getSlotStrategy();
-        if (slotStrategy != SlotStrategy.MAIN)
-        {
-          final String slot =
-              slotStrategy.calcSlot(element.dependency.getArtifact());
-          moduleElement.setAttribute("slot", slot);
-        }
         dependenciesElement.addContent(moduleElement);
       }
-
-      root.addContent(dependenciesElement);
     }
   }
 

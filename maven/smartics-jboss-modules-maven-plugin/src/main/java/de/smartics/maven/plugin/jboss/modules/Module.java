@@ -26,6 +26,10 @@ import de.smartics.maven.plugin.jboss.modules.domain.MatchContext;
 
 /**
  * A module descriptor to generate a <code>module.xml</code> file.
+ *
+ * @see <a
+ *      href="https://docs.jboss.org/author/display/MODULES/Module+descriptors">Module
+ *      descriptors</a>
  */
 public class Module
 {
@@ -70,6 +74,12 @@ public class Module
    * The map of properties to add to the <code>module.xml</code>.
    */
   private Map<String, String> properties;
+
+  /**
+   * The list of module dependencies to be added to those calculated from the
+   * BOM.
+   */
+  private List<Dependency> dependencies;
 
   // ****************************** Initializer *******************************
 
@@ -221,6 +231,41 @@ public class Module
   public void setProperties(final Map<String, String> properties)
   {
     this.properties = properties;
+  }
+
+  /**
+   * Returns the list of module dependencies to be added to those calculated
+   * from the BOM.
+   *
+   * @return the list of module dependencies to be added to those calculated
+   *         from the BOM.
+   */
+  public List<Dependency> getDependencies()
+  {
+    return dependencies;
+  }
+
+  /**
+   * Checks if there are dependencies registered with this module.
+   *
+   * @return <code>true</code> if there is at least one dependency,
+   *         <code>false</code> otherwise.
+   */
+  public boolean hasDependencies()
+  {
+    return (dependencies != null && !dependencies.isEmpty());
+  }
+
+  /**
+   * Sets the list of module dependencies to be added to those calculated from
+   * the BOM.
+   *
+   * @param dependencies the list of module dependencies to be added to those
+   *          calculated from the BOM.
+   */
+  public void setDependencies(final List<Dependency> dependencies)
+  {
+    this.dependencies = dependencies;
   }
 
   // --- business -------------------------------------------------------------
