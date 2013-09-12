@@ -55,7 +55,7 @@ public final class ModuleMap
   /**
    * Maps modules to their dependencies.
    */
-  private final Multimap<Module, Dependency> module2Dependency = HashMultimap
+  private final Multimap<Module, Dependency> module2Dependencies = HashMultimap
       .create();
 
   /**
@@ -93,7 +93,7 @@ public final class ModuleMap
    * @param dependencies the dependencies to add.
    */
   public ModuleMap(final List<Module> modules,
-      final List<Dependency> dependencies)
+      final Collection<Dependency> dependencies)
   {
     this.modules =
         new ArrayList<Module>(modules != null ? modules
@@ -183,7 +183,7 @@ public final class ModuleMap
 
   // --- init -----------------------------------------------------------------
 
-  private void initDependencies(final List<Dependency> dependencies)
+  private void initDependencies(final Collection<Dependency> dependencies)
   {
     for (final Dependency dependency : dependencies)
     {
@@ -202,7 +202,7 @@ public final class ModuleMap
   {
     final Map<Module, List<Dependency>> map =
         new LinkedHashMap<Module, List<Dependency>>();
-    for (final Entry<Module, Collection<Dependency>> entry : module2Dependency
+    for (final Entry<Module, Collection<Dependency>> entry : module2Dependencies
         .asMap().entrySet())
     {
       final List<Dependency> list = new ArrayList<Dependency>(entry.getValue());
@@ -267,7 +267,7 @@ public final class ModuleMap
 
   private void storeArtifact(final Module module, final Dependency dependency)
   {
-    module2Dependency.put(module, dependency);
+    module2Dependencies.put(module, dependency);
     dependency2Module.put(new DependencyKey(dependency), module);
   }
 
@@ -350,7 +350,7 @@ public final class ModuleMap
   public String toString()
   {
     final StringBuilder buffer = new StringBuilder(2048);
-    for (final Entry<Module, Collection<Dependency>> entry : module2Dependency
+    for (final Entry<Module, Collection<Dependency>> entry : module2Dependencies
         .asMap().entrySet())
     {
       final Module module = entry.getKey();

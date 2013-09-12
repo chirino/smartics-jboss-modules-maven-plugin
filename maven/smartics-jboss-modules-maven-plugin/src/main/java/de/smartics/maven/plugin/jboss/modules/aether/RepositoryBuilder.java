@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.sonatype.aether.RepositorySystem;
 import org.sonatype.aether.RepositorySystemSession;
+import org.sonatype.aether.graph.Dependency;
 import org.sonatype.aether.graph.DependencyFilter;
 import org.sonatype.aether.repository.RemoteRepository;
 
@@ -75,6 +76,14 @@ public interface RepositoryBuilder
    * @return the remote repositories of artifacts.
    */
   List<RemoteRepository> getRemoteRepositories();
+
+  /**
+   * The list of managed dependencies to allow to resolve the appropriate
+   * versions of artifacts.
+   *
+   * @return the list of managed dependencies.
+   */
+  List<Dependency> getManagedDependencies();
 
   // --- business -------------------------------------------------------------
 

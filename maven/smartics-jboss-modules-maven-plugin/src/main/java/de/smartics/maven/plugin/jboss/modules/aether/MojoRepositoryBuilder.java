@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.sonatype.aether.RepositorySystem;
 import org.sonatype.aether.RepositorySystemSession;
+import org.sonatype.aether.graph.Dependency;
 import org.sonatype.aether.graph.DependencyFilter;
 import org.sonatype.aether.repository.RemoteRepository;
 
@@ -53,6 +54,12 @@ public final class MojoRepositoryBuilder implements RepositoryBuilder
    * The filters for dependencies.
    */
   private List<DependencyFilter> dependencyFilters;
+
+  /**
+   * The list of managed dependencies to allow to resolve the appropriate
+   * versions of artifacts.
+   */
+  private List<Dependency> managedDependencies;
 
   /**
    * The flag to set the system offline.
@@ -90,7 +97,8 @@ public final class MojoRepositoryBuilder implements RepositoryBuilder
    * @param remoteRepositories the remote repositories of artifacts.
    * @return a reference to this builder.
    */
-  public MojoRepositoryBuilder with(final List<RemoteRepository> remoteRepositories)
+  public MojoRepositoryBuilder with(
+      final List<RemoteRepository> remoteRepositories)
   {
     this.remoteRepositories = remoteRepositories;
     return this;
@@ -132,7 +140,6 @@ public final class MojoRepositoryBuilder implements RepositoryBuilder
     return this;
   }
 
-
   @Override
   public List<DependencyFilter> getDependencyFilters()
   {
@@ -149,6 +156,27 @@ public final class MojoRepositoryBuilder implements RepositoryBuilder
       final List<DependencyFilter> dependencyFilters)
   {
     this.dependencyFilters = dependencyFilters;
+    return this;
+  }
+
+  @Override
+  public List<Dependency> getManagedDependencies()
+  {
+    return managedDependencies;
+  }
+
+  /**
+   * Sets the list of managed dependencies to allow to resolve the appropriate
+   * versions of artifacts.
+   *
+   * @param managedDependencies the list of managed dependencies to allow to
+   *          resolve the appropriate versions of artifacts.
+   * @return a reference to this builder.
+   */
+  public MojoRepositoryBuilder withManagedDependencies(
+      final List<Dependency> managedDependencies)
+  {
+    this.managedDependencies = managedDependencies;
     return this;
   }
 

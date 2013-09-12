@@ -13,39 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.smartics.maven.plugin.jboss.modules.aether;
+package de.smartics.maven.plugin.jboss.modules.aether.filter;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 
 import org.sonatype.aether.graph.Dependency;
+import org.sonatype.aether.graph.DependencyFilter;
+import org.sonatype.aether.graph.DependencyNode;
 
 /**
- * The Maven response with calculated dependencies.
+ * Rejects a dependency if it is not a direct dependency.
  */
-public final class MavenResponse
+public final class DirectDependenciesOnlyFilter implements Serializable,
+    DependencyFilter
 {
   // ********************************* Fields *********************************
 
   // --- constants ------------------------------------------------------------
 
-  // --- members --------------------------------------------------------------
+  /**
+   * The class version identifier.
+   */
+  private static final long serialVersionUID = 1L;
 
   /**
-   * The calculated dependencies.
+   * The singleton instance since the filter has no state.
    */
-  private final List<Dependency> dependencies = new ArrayList<Dependency>();
+  public static final DirectDependenciesOnlyFilter INSTANCE =
+      new DirectDependenciesOnlyFilter();
+
+  // --- members --------------------------------------------------------------
 
   // ****************************** Initializer *******************************
 
   // ****************************** Constructors ******************************
-
-  /**
-   * Default constructor.
-   */
-  public MavenResponse()
-  {
-  }
 
   // ****************************** Inner Classes *****************************
 
@@ -57,24 +59,18 @@ public final class MavenResponse
 
   // --- business -------------------------------------------------------------
 
-  /**
-   * Adds a dependency.
-   *
-   * @param dependency the dependency to add.
-   */
-  public void add(final Dependency dependency)
+  @Override
+  public boolean accept(final DependencyNode node,
+      final List<DependencyNode> parents)
   {
-    dependencies.add(dependency);
-  }
+    final Dependency dependency = node.getDependency();
+    if (dependency == null)
+    {
+      return false;
+    }
 
-  /**
-   * Returns the calculated dependencies.
-   *
-   * @return the calculated dependencies.
-   */
-  public List<Dependency> getDependencies()
-  {
-    return dependencies;
+    final boolean isDirect = parents.size() <= 1;
+    return isDirect;
   }
 
   // --- object basics --------------------------------------------------------

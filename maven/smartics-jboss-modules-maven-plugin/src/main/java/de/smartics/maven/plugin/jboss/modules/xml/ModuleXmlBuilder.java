@@ -59,6 +59,16 @@ public final class ModuleXmlBuilder
   private final ExecutionContext context;
 
   /**
+   * The module to build.
+   */
+  private final Module module;
+
+  /**
+   * The dependencies to reference.
+   */
+  private final Collection<Dependency> dependencies;
+
+  /**
    * The XML document.
    */
   private final Document document;
@@ -84,6 +94,9 @@ public final class ModuleXmlBuilder
       final Collection<Dependency> dependencies)
   {
     this.context = context;
+    this.module = module;
+    this.dependencies = dependencies;
+
     root = new Element("module", NS);
     root.setAttribute("name", module.getName());
     final String slot = module.getSlot();
@@ -92,10 +105,6 @@ public final class ModuleXmlBuilder
       root.setAttribute("slot", slot);
     }
     document = new Document(root);
-
-    addProperties(module);
-    addResources(dependencies);
-    addDependencies(module, dependencies);
   }
 
   // ****************************** Inner Classes *****************************
@@ -132,6 +141,24 @@ public final class ModuleXmlBuilder
   // ********************************* Methods ********************************
 
   // --- init -----------------------------------------------------------------
+
+  // --- get&set --------------------------------------------------------------
+
+  // --- business -------------------------------------------------------------
+
+  /**
+   * Builds the document.
+   *
+   * @return the XML document.
+   */
+  public Document build()
+  {
+    addProperties(module);
+    addResources(dependencies);
+    addDependencies(module, dependencies);
+
+    return document;
+  }
 
   private void addProperties(final Module module)
   {
@@ -198,7 +225,7 @@ public final class ModuleXmlBuilder
       final Set<SortElement> sorted = new TreeSet<SortElement>();
       for (final Dependency dependency : dependencies)
       {
-        final Set<Dependency> resolvedDependencies =
+        final List<Dependency> resolvedDependencies =
             context.resolve(dependency);
         addSortedDependencies(sorted, module, resolvedDependencies);
       }
@@ -227,7 +254,7 @@ public final class ModuleXmlBuilder
   }
 
   private void addSortedDependencies(final Set<SortElement> sorted,
-      final Module owningModule, final Set<Dependency> dependencies)
+      final Module owningModule, final List<Dependency> dependencies)
   {
     for (final Dependency dependency : dependencies)
     {
@@ -249,20 +276,6 @@ public final class ModuleXmlBuilder
       }
     }
   }
-
-  // --- get&set --------------------------------------------------------------
-
-  /**
-   * Returns the XML document.
-   *
-   * @return the XML document.
-   */
-  public Document getDocument()
-  {
-    return document;
-  }
-
-  // --- business -------------------------------------------------------------
 
   // --- object basics --------------------------------------------------------
 

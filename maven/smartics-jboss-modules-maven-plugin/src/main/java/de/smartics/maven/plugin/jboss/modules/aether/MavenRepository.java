@@ -15,6 +15,7 @@
  */
 package de.smartics.maven.plugin.jboss.modules.aether;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.sonatype.aether.RepositorySystem;
@@ -27,7 +28,10 @@ import org.sonatype.aether.repository.RemoteRepository;
 import org.sonatype.aether.resolution.DependencyRequest;
 import org.sonatype.aether.resolution.DependencyResolutionException;
 import org.sonatype.aether.resolution.DependencyResult;
+import org.sonatype.aether.util.filter.AndDependencyFilter;
 import org.sonatype.aether.util.graph.PreorderNodeListGenerator;
+
+import de.smartics.maven.plugin.jboss.modules.aether.filter.DirectDependenciesOnlyFilter;
 
 /**
  * The repository to access artifacts to resolve for property descriptor
@@ -58,9 +62,17 @@ public final class MavenRepository
   private final List<RemoteRepository> remoteRepositories;
 
   /**
-   * The list of dependency filters to apply to the dependency request.
+   * The list of dependency filters to apply to the dependency request. This
+   * allows to limit the collect request since every unresolved dependency is
+   * skipped.
    */
   private final List<DependencyFilter> dependencyFilters;
+
+  /**
+   * The list of managed dependencies to allow to resolve the appropriat
+   * versions of artifacts.
+   */
+  private final List<Dependency> managedDependencies;
 
   /**
    * The flag to control accessing the local repository only.
@@ -77,8 +89,8 @@ public final class MavenRepository
     this.session = builder.getSession();
     this.repositorySystem = builder.getRepositorySystem();
     this.dependencyFilters = builder.getDependencyFilters();
+    this.managedDependencies = builder.getManagedDependencies();
     this.offline = builder.isOffline();
-
   }
 
   // ****************************** Inner Classes *****************************
@@ -92,7 +104,7 @@ public final class MavenRepository
   // --- business -------------------------------------------------------------
 
   /**
-   * Resolves the artifact so that it is locally accessible.
+   * Resolves the dependency so that it is locally accessible.
    *
    * @param dependency the dependency to resolve.
    * @return the reference to the resolved artifact that is now stored locally
@@ -103,7 +115,81 @@ public final class MavenRepository
   public MavenResponse resolve(final Dependency dependency)
     throws DependencyResolutionException
   {
-    final DependencyRequest dependencyRequest = createRequest(dependency);
+    final DependencyRequest dependencyRequest = createRequest(dependency, true);
+    return configureRequest(dependencyRequest);
+  }
+
+  /**
+   * Resolves direct dependencies of the dependency so that they are locally
+   * accessible.
+   *
+   * @param dependency the dependency to resolve.
+   * @return the reference to the resolved artifact that is now stored locally
+   *         ready for access.
+   * @throws DependencyResolutionException if the dependency tree could not be
+   *           built or any dependency artifact could not be resolved.
+   */
+  public MavenResponse resolveDirect(final Dependency dependency)
+    throws DependencyResolutionException
+  {
+    final DependencyRequest dependencyRequest =
+        createRequest(dependency, false);
+    return configureRequest(dependencyRequest);
+  }
+
+  private DependencyRequest createRequest(final Dependency dependency,
+      final boolean transitive)
+  {
+    final CollectRequest collectRequest = new CollectRequest();
+    collectRequest.setRoot(dependency);
+    collectRequest.setManagedDependencies(managedDependencies);
+    return configureRequest(collectRequest, transitive);
+  }
+
+  private static MavenResponse createResult(
+      final PreorderNodeListGenerator generator)
+  {
+    final MavenResponse response = new MavenResponse();
+    final List<DependencyNode> nodes = generator.getNodes();
+
+    // This is a kind of workaround: We should limit the collect request, but
+    // have not enough information with the DependencySelector interface
+    // (we need the parents!). Therefore we use the DependencyFilter interface
+    // (which has access to the parents) to resolve only those that meet our
+    // constraints. Afterwards we skip all unresolved dependencies (which are
+    // those that do not reference a file).
+    for (final DependencyNode node : nodes)
+    {
+      final Dependency dependency = node.getDependency();
+      if (dependency.getArtifact().getFile() != null)
+      {
+        response.add(dependency);
+      }
+    }
+    return response;
+  }
+
+  /**
+   * Resolves the dependencies so that it is locally accessible.
+   *
+   * @param dependencies the rootDependencies to resolve.
+   * @return the reference to the resolved artifact that is now stored locally
+   *         ready for access.
+   * @throws DependencyResolutionException if the dependency tree could not be
+   *           built or any dependency artifact could not be resolved.
+   */
+  public MavenResponse resolve(final List<Dependency> dependencies)
+    throws DependencyResolutionException
+  {
+    final DependencyRequest dependencyRequest =
+        createRequest(dependencies, true);
+    return configureRequest(dependencyRequest);
+  }
+
+  private MavenResponse configureRequest(
+      final DependencyRequest dependencyRequest)
+    throws DependencyResolutionException
+  {
     try
     {
       final DependencyResult result =
@@ -124,10 +210,17 @@ public final class MavenRepository
     }
   }
 
-  private DependencyRequest createRequest(final Dependency dependency)
+  private DependencyRequest createRequest(final List<Dependency> dependencies,
+      final boolean transitive)
   {
     final CollectRequest collectRequest = new CollectRequest();
-    collectRequest.setRoot(dependency);
+    collectRequest.setDependencies(dependencies);
+    return configureRequest(collectRequest, transitive);
+  }
+
+  private DependencyRequest configureRequest(
+      final CollectRequest collectRequest, final boolean transitive)
+  {
     if (!offline && !remoteRepositories.isEmpty())
     {
       collectRequest.setRepositories(remoteRepositories);
@@ -135,28 +228,29 @@ public final class MavenRepository
 
     final DependencyRequest dependencyRequest = new DependencyRequest();
     dependencyRequest.setCollectRequest(collectRequest);
-    for (final DependencyFilter filter : dependencyFilters)
-    {
-      dependencyRequest.setFilter(filter);
-    }
+    applyFilters(dependencyRequest, transitive);
+
     return dependencyRequest;
   }
 
-  private static MavenResponse createResult(
-      final PreorderNodeListGenerator generator)
+  private void applyFilters(final DependencyRequest dependencyRequest,
+      final boolean transitive)
   {
-    final MavenResponse response = new MavenResponse();
-    final List<DependencyNode> nodes = generator.getNodes();
-
-    for (final DependencyNode node : nodes)
+    final List<DependencyFilter> filters = new ArrayList<DependencyFilter>();
+    if (dependencyFilters != null)
     {
-      final Dependency dependency = node.getDependency();
-      if (!"test".equals(dependency.getScope())) // FIXME: Workaround..
-      {
-        response.add(dependency);
-      }
+      filters.addAll(dependencyFilters);
     }
-    return response;
+    if (!transitive)
+    {
+      filters.add(DirectDependenciesOnlyFilter.INSTANCE);
+    }
+    if (!filters.isEmpty())
+    {
+      final AndDependencyFilter dependencyFilter =
+          new AndDependencyFilter(filters);
+      dependencyRequest.setFilter(dependencyFilter);
+    }
   }
 
   // --- object basics --------------------------------------------------------

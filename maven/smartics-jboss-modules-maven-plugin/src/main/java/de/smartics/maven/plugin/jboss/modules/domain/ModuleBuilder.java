@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jdom2.Document;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 import org.sonatype.aether.artifact.Artifact;
@@ -155,7 +156,8 @@ public final class ModuleBuilder
     try
     {
       out = new BufferedOutputStream(new FileOutputStream(file));
-      outputter.output(xml.getDocument(), out);
+      final Document document = xml.build();
+      outputter.output(document, out);
     }
     finally
     {
@@ -183,6 +185,7 @@ public final class ModuleBuilder
       }
     }
   }
+
   // --- object basics --------------------------------------------------------
 
 }

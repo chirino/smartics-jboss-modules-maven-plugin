@@ -16,8 +16,7 @@
 package de.smartics.maven.plugin.jboss.modules.domain;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 import org.apache.maven.plugin.logging.Log;
 import org.sonatype.aether.graph.Dependency;
@@ -25,6 +24,7 @@ import org.sonatype.aether.resolution.DependencyResolutionException;
 
 import de.smartics.maven.plugin.jboss.modules.Module;
 import de.smartics.util.lang.Arg;
+import edu.emory.mathcs.backport.java.util.Collections;
 
 /**
  * The context and configuration to control the building of the module archive.
@@ -272,18 +272,19 @@ public final class ExecutionContext
    *          is requested.
    * @return the set of direct dependencies.
    */
-  public Set<Dependency> resolve(final Dependency dependency)
+  @SuppressWarnings("unchecked")
+  public List<Dependency> resolve(final Dependency dependency)
   {
     try
     {
-      return resolver.resolve(dependency);
+      return resolver.resolveDirect(dependency);
     }
     catch (final DependencyResolutionException e)
     {
       log.error("Cannot resolve dependency '"
                 + dependency.getArtifact().getArtifactId() + "': "
                 + e.getMessage());
-      return new HashSet<Dependency>();
+      return Collections.emptyList();
     }
   }
 

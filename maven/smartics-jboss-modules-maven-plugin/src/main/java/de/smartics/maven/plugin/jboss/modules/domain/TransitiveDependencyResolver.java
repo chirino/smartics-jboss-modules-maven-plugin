@@ -15,7 +15,7 @@
  */
 package de.smartics.maven.plugin.jboss.modules.domain;
 
-import java.util.Set;
+import java.util.List;
 
 import org.sonatype.aether.graph.Dependency;
 import org.sonatype.aether.resolution.DependencyResolutionException;
@@ -39,16 +39,6 @@ public interface TransitiveDependencyResolver
 
   // --- business -------------------------------------------------------------
 
-  // /**
-  // * Resolves the transitive dependencies for the given artifact.
-  // *
-  // * @param artifact the artifact whose calculation of transitive dependencies
-  // * is requested.
-  // * @return the set of transitive dependencies.
-  // */
-  // Set<Artifact> resolve(final Artifact artifact)
-  // throws DependencyResolutionException;
-
   /**
    * Resolves the transitive dependencies for the given dependency.
    *
@@ -57,7 +47,29 @@ public interface TransitiveDependencyResolver
    * @return the set of transitive dependencies.
    * @throws DependencyResolutionException if the dependency cannot be resolved.
    */
-  Set<Dependency> resolve(final Dependency dependency)
+  List<Dependency> resolve(Dependency dependency)
+    throws DependencyResolutionException;
+
+  /**
+   * Resolves the direct dependencies for the given dependency.
+   *
+   * @param dependency the dependency whose calculation of direct dependencies
+   *          is requested.
+   * @return the set of direct dependencies.
+   * @throws DependencyResolutionException if the dependency cannot be resolved.
+   */
+  List<Dependency> resolveDirect(Dependency dependency)
+    throws DependencyResolutionException;
+
+  /**
+   * Resolves the transitive dependencies for the given dependencies.
+   *
+   * @param dependencies the dependencies whose calculation of transitive
+   *          dependencies is requested.
+   * @return the set of transitive dependencies.
+   * @throws DependencyResolutionException if any dependency cannot be resolved.
+   */
+  List<Dependency> resolve(List<Dependency> dependencies)
     throws DependencyResolutionException;
 
   // --- object basics --------------------------------------------------------

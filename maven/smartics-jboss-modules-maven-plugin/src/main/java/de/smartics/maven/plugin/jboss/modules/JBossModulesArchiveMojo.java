@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
 import org.apache.maven.execution.MavenSession;
@@ -43,6 +44,7 @@ import org.codehaus.plexus.archiver.Archiver;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.sonatype.aether.RepositorySystem;
 import org.sonatype.aether.RepositorySystemSession;
+import org.sonatype.aether.collection.DependencySelector;
 import org.sonatype.aether.graph.Dependency;
 import org.sonatype.aether.graph.DependencyFilter;
 import org.sonatype.aether.repository.RemoteRepository;
@@ -57,12 +59,13 @@ import de.smartics.maven.plugin.jboss.modules.aether.Mapper;
 import de.smartics.maven.plugin.jboss.modules.aether.MavenRepository;
 import de.smartics.maven.plugin.jboss.modules.aether.MavenResponse;
 import de.smartics.maven.plugin.jboss.modules.aether.MojoRepositoryBuilder;
-import de.smartics.maven.plugin.jboss.modules.aether.TestScopeFilter;
+import de.smartics.maven.plugin.jboss.modules.aether.filter.TestScopeFilter;
 import de.smartics.maven.plugin.jboss.modules.domain.ExecutionContext;
 import de.smartics.maven.plugin.jboss.modules.domain.ModuleBuilder;
 import de.smartics.maven.plugin.jboss.modules.domain.ModuleMap;
 import de.smartics.maven.plugin.jboss.modules.domain.SlotStrategy;
 import de.smartics.maven.plugin.jboss.modules.domain.TransitiveDependencyResolver;
+import edu.emory.mathcs.backport.java.util.Collections;
 
 /**
  * Generates a archive containing modules from a BOM project.
@@ -195,6 +198,15 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private String updatePolicy;
 
   /**
+   * Controls whether or not optional dependencies should be followed.
+   *
+   * @since 1.0
+   */
+  @Parameter(property = "smartics-jboss-modules.followOptionalDependencies",
+      defaultValue = "false")
+  private boolean followOptionalDependencies;
+
+  /**
    * The name of the default slot to write to. If not specified, the major
    * version of the dependency will be used as slot value.
    *
@@ -256,8 +268,10 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
 
     this.repositorySession = adjustSession();
 
-    final Set<Dependency> rootDependencies = resolveRootDependencies();
-    final List<Dependency> dependencies = resolveDependencies(rootDependencies);
+    final List<Dependency> rootDependencies = calcRootDependencies();
+    final List<Dependency> dependencies = resolve(rootDependencies);
+
+    logDependencies(rootDependencies, dependencies);
 
     final ExecutionContext context = createContext(dependencies);
     for (final Entry<Module, List<Dependency>> entry : context.getModuleMap()
@@ -282,13 +296,37 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
     attach();
   }
 
+  private void logDependencies(final Collection<Dependency> rootDependencies,
+      final Collection<Dependency> dependencies) throws MojoExecutionException
+  {
+    if (verbose)
+    {
+      try
+      {
+        FileUtils.writeStringToFile(new File(targetFolder,
+            "root-dependencies.txt"), rootDependencies.toString());
+        FileUtils.writeStringToFile(new File(targetFolder,
+            "resolved-dependencies.txt"), dependencies.toString());
+      }
+      catch (final IOException e)
+      {
+        throw new MojoExecutionException("dependencies", e);
+      }
+    }
+  }
+
   private DefaultRepositorySystemSession adjustSession()
   {
     final DefaultRepositorySystemSession session =
         new DefaultRepositorySystemSession(repositorySession);
-    final AndDependencySelector selector =
-        new AndDependencySelector(new ScopeDependencySelector("test"),
-            new OptionalDependencySelector(), new ExclusionDependencySelector());
+    final Set<DependencySelector> selectors = new HashSet<DependencySelector>();
+    selectors.add(new ScopeDependencySelector("test"));
+    if (!followOptionalDependencies)
+    {
+      selectors.add(new OptionalDependencySelector());
+    }
+    selectors.add(new ExclusionDependencySelector());
+    final AndDependencySelector selector = new AndDependencySelector(selectors);
     session.setDependencySelector(selector);
     session.setUpdatePolicy(updatePolicy);
     session.setOffline(offline);
@@ -334,8 +372,7 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
     builder.with(getLog());
     builder.withTargetFolder(targetFolder);
 
-    final TransitiveDependencyResolver resolver =
-        createDirectDependencyResolver();
+    final TransitiveDependencyResolver resolver = createResolver(dependencies);
     builder.with(resolver);
 
     final SlotStrategy slotStrategy = SlotStrategy.fromString(this.defaultSlot);
@@ -353,59 +390,58 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   }
 
   @SuppressWarnings("unchecked")
-  private Set<Dependency> resolveRootDependencies()
-    throws MojoExecutionException
+  private List<Dependency> calcRootDependencies() throws MojoExecutionException
   {
-    final Set<Dependency> rootDependencies = new HashSet<Dependency>();
+    final List<Dependency> rootDependencies = new ArrayList<Dependency>();
 
-    final List<Dependency> projectDependencies = project.getDependencies();
-    rootDependencies.addAll(projectDependencies);
+    final List<org.apache.maven.model.Dependency> projectDependencies =
+        project.getDependencies();
+    addMappedDependencies(rootDependencies, projectDependencies);
 
     final DependencyManagement management = project.getDependencyManagement();
-    final TransitiveDependencyResolver resolver =
-        createDirectDependencyResolver();
-
-    final Mapper mapper = new Mapper();
-    for (final org.apache.maven.model.Dependency mavenDependency : management
-        .getDependencies())
+    if (management != null)
     {
-      final Dependency dependency = mapper.map(mavenDependency);
-      try
-      {
-        resolver.resolve(dependency);
-        rootDependencies.add(dependency);
-      }
-      catch (final DependencyResolutionException e)
-      {
-        throw new MojoExecutionException("Cannot resolve root dependencies.", e);
-      }
+      final List<org.apache.maven.model.Dependency> managedDependencies =
+          management.getDependencies();
+      addMappedDependencies(rootDependencies, managedDependencies);
     }
 
     return rootDependencies;
   }
 
-  private List<Dependency> resolveDependencies(
-      final Collection<Dependency> rootDependencies)
-    throws MojoExecutionException
+  private static void addMappedDependencies(
+      final List<Dependency> rootDependencies,
+      final List<org.apache.maven.model.Dependency> newDependencies)
   {
-    final List<Dependency> dependencies = new ArrayList<Dependency>();
-    final TransitiveDependencyResolver resolver =
-        createDirectDependencyResolver();
-    for (final Dependency dependency : rootDependencies)
+    if (newDependencies != null && !newDependencies.isEmpty())
     {
-      try
+      final Mapper mapper = new Mapper();
+      for (final org.apache.maven.model.Dependency mavenDependency : newDependencies)
       {
-        dependencies.addAll(resolver.resolve(dependency));
-      }
-      catch (final DependencyResolutionException e)
-      {
-        getLog().error("Cannot resolve dependency: " + e.getMessage());
+        final Dependency dependency = mapper.map(mavenDependency);
+        rootDependencies.add(dependency);
       }
     }
-    return dependencies;
   }
 
-  private TransitiveDependencyResolver createDirectDependencyResolver()
+  @SuppressWarnings("unchecked")
+  private List<Dependency> resolve(final List<Dependency> rootDependencies)
+  {
+    final TransitiveDependencyResolver resolver = createResolver(null);
+    try
+    {
+      final List<Dependency> dependencies = resolver.resolve(rootDependencies);
+      return dependencies;
+    }
+    catch (final DependencyResolutionException e)
+    {
+      getLog().error("Cannot resolve dependency: " + e.getMessage());
+    }
+    return Collections.emptyList();
+  }
+
+  private TransitiveDependencyResolver createResolver(
+      final List<Dependency> managedDependencies)
   {
     final List<DependencyFilter> dependencyFilters =
         new ArrayList<DependencyFilter>();
@@ -413,18 +449,35 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
 
     final MojoRepositoryBuilder builder = new MojoRepositoryBuilder();
     builder.with(repositorySystem).with(repositorySession).with(remoteRepos)
-        .withDependencyFilters(dependencyFilters).withOffline(offline).build();
+        .withDependencyFilters(dependencyFilters)
+        .withManagedDependencies(managedDependencies).withOffline(offline)
+        .build();
     final MavenRepository repository = builder.build();
 
     return new TransitiveDependencyResolver()
     {
       @Override
-      public Set<Dependency> resolve(final Dependency dependency)
+      public List<Dependency> resolve(final Dependency dependency)
         throws DependencyResolutionException
       {
         final MavenResponse response = repository.resolve(dependency);
-        final Set<Dependency> dependencies = response.getDependencies();
-        return dependencies;
+        return response.getDependencies();
+      }
+
+      @Override
+      public List<Dependency> resolve(final List<Dependency> rootDependencies)
+        throws DependencyResolutionException
+      {
+        final MavenResponse response = repository.resolve(rootDependencies);
+        return response.getDependencies();
+      }
+
+      @Override
+      public List<Dependency> resolveDirect(final Dependency dependency)
+        throws DependencyResolutionException
+      {
+        final MavenResponse response = repository.resolveDirect(dependency);
+        return response.getDependencies();
       }
     };
   }

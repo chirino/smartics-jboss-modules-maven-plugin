@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>de.smartics.maven.plugin</groupId>
-  <artifactId>transitive-dependencies</artifactId>
+  <artifactId>transitive-dependencies-3</artifactId>
   <version>testing</version>
   <packaging>pom</packaging>
 
@@ -17,13 +17,15 @@
   </description>
   <url>http://www.smartics.de/test</url>
 
-  <dependencies>
-    <dependency>
-      <groupId>commons-configuration</groupId>
-      <artifactId>commons-configuration</artifactId>
-      <version>1.8</version>
-    </dependency>
-  </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>jaxen</groupId>
+        <artifactId>jaxen</artifactId>
+        <version>1.1-beta-8</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>
