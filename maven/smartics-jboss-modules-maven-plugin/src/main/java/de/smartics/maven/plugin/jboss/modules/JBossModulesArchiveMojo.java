@@ -303,10 +303,11 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
     {
       try
       {
-        FileUtils.writeStringToFile(new File(targetFolder,
-            "root-dependencies.txt"), rootDependencies.toString());
-        FileUtils.writeStringToFile(new File(targetFolder,
-            "resolved-dependencies.txt"), dependencies.toString());
+
+        FileUtils.writeStringToFile(new File(project.getBasedir(),
+            "target/root-dependencies.txt"), rootDependencies.toString());
+        FileUtils.writeStringToFile(new File(project.getBasedir(),
+            "target/resolved-dependencies.txt"), dependencies.toString());
       }
       catch (final IOException e)
       {
