@@ -23,6 +23,8 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.sonatype.aether.artifact.Artifact;
 
 import de.smartics.maven.plugin.jboss.modules.domain.MatchContext;
+import de.smartics.maven.plugin.jboss.modules.domain.matching.DelegationMatchContext;
+import de.smartics.maven.plugin.jboss.modules.domain.matching.SingleMatchContext;
 
 /**
  * A module descriptor to generate a <code>module.xml</code> file.
@@ -96,6 +98,21 @@ public class Module
    */
   public Module()
   {
+  }
+
+  /**
+   * Copy constructor. Shallow copies everything, except the name.
+   *
+   * @param originalModule the module to clone.
+   */
+  public Module(final Module originalModule)
+  {
+    this.slot = originalModule.slot;
+    this.basePath = originalModule.basePath;
+    this.includes = originalModule.includes;
+    this.excludes = originalModule.excludes;
+    this.dependencies = originalModule.dependencies;
+    this.skip = originalModule.skip;
   }
 
   // ****************************** Inner Classes *****************************
@@ -292,11 +309,11 @@ public class Module
         (includesContext.isMatched() && !excludesContext.isMatched());
     if (includesContext.isMatched())
     {
-      return new MatchContext(result, includesContext);
+      return new DelegationMatchContext(result, includesContext);
     }
     else
     {
-      return new MatchContext(result);
+      return new SingleMatchContext(result);
     }
   }
 
@@ -314,7 +331,7 @@ public class Module
         }
       }
     }
-    return new MatchContext(false);
+    return new SingleMatchContext(false);
   }
 
   /**

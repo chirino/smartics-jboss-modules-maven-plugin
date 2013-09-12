@@ -24,6 +24,8 @@ import org.apache.commons.lang.StringUtils;
 import org.sonatype.aether.artifact.Artifact;
 
 import de.smartics.maven.plugin.jboss.modules.domain.MatchContext;
+import de.smartics.maven.plugin.jboss.modules.domain.matching.DoubleMatchContext;
+import de.smartics.maven.plugin.jboss.modules.domain.matching.SingleMatchContext;
 
 /**
  * Models an inclusion or exclusion. An include/exclude matches if all given
@@ -157,13 +159,13 @@ public class Clusion
    */
   public MatchContext matches(final Artifact artifact)
   {
-    final MatchContext matchesGroupId =
+    final SingleMatchContext matchesGroupId =
         matches(groupIdPattern, groupId, artifact.getGroupId());
     if (matchesGroupId != null && !matchesGroupId.isMatched())
     {
-      return new MatchContext(false);
+      return new SingleMatchContext(false);
     }
-    final MatchContext matchesArtifactId =
+    final SingleMatchContext matchesArtifactId =
         matches(artifactIdPattern, artifactId, artifact.getArtifactId());
 
     final boolean result =
@@ -171,22 +173,23 @@ public class Clusion
             .isMatched()))
             || (matchesArtifactId != null && matchesArtifactId.isMatched());
 
-    final MatchContext context = new MatchContext(result, matchesArtifactId);
+    final MatchContext context =
+        new DoubleMatchContext(result, matchesGroupId, matchesArtifactId);
     return context;
   }
 
-  private static MatchContext matches(final Pattern pattern, final String id,
-      final String inputId)
+  private static SingleMatchContext matches(final Pattern pattern,
+      final String id, final String inputId)
   {
     if (pattern != null)
     {
       final Matcher matcher = pattern.matcher(inputId);
-      return new MatchContext(matcher);
+      return new SingleMatchContext(matcher);
     }
 
     if (StringUtils.isNotBlank(id))
     {
-      return new MatchContext(id.equals(inputId));
+      return new SingleMatchContext(id.equals(inputId));
     }
 
     return null;

@@ -274,7 +274,7 @@ public final class ModuleMap
   private Module createModule(final MatchContext matchContext,
       final Module originalModule)
   {
-    final Module module = new Module();
+    final Module module = new Module(originalModule);
 
     final String name = matchContext.translateName(originalModule.getName());
     module.setName(name);

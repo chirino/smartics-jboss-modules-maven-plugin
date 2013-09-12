@@ -15,73 +15,22 @@
  */
 package de.smartics.maven.plugin.jboss.modules.domain;
 
-import java.util.regex.Matcher;
+import java.util.regex.MatchResult;
 
 /**
  * Contains the result of a regular expression match.
  */
-public final class MatchContext
+public interface MatchContext
 {
   // ********************************* Fields *********************************
 
   // --- constants ------------------------------------------------------------
 
-  // --- members --------------------------------------------------------------
-
-  /**
-   * The result of the match.
-   */
-  private final boolean result;
-
-  /**
-   * The matcher to access group information.
-   */
-  private final Matcher matcher;
-
   // ****************************** Initializer *******************************
-
-  // ****************************** Constructors ******************************
-
-  /**
-   * Default constructor with a non-regexp match result.
-   *
-   * @param result the result of the match.
-   */
-  public MatchContext(final boolean result)
-  {
-    this.result = result;
-    this.matcher = null;
-  }
-
-  /**
-   * Default constructor with a matcher.
-   *
-   * @param matcher the matcher to access group information.
-   */
-  public MatchContext(final Matcher matcher)
-  {
-    this.result = matcher.matches();
-    this.matcher = matcher;
-  }
-
-  /**
-   * Constructor with a context.
-   *
-   * @param result the result of the match.
-   * @param context the context of a match to derive from.
-   */
-  public MatchContext(final boolean result, final MatchContext context)
-  {
-    this.result = result;
-    this.matcher =
-        context != null && context.isMatched() ? context.matcher : null;
-  }
 
   // ****************************** Inner Classes *****************************
 
   // ********************************* Methods ********************************
-
-  // --- init -----------------------------------------------------------------
 
   // --- get&set --------------------------------------------------------------
 
@@ -91,10 +40,16 @@ public final class MatchContext
    * @return <code>true</code> if the match was successful, <code>false</code>
    *         otherwise.
    */
-  public boolean isMatched()
-  {
-    return result;
-  }
+  boolean isMatched();
+
+  /**
+   * Returns the match result to access group information.
+   *
+   * @return the matcher to access group information.
+   */
+  MatchResult getMatchResult();
+
+  // --- business -------------------------------------------------------------
 
   /**
    * Translates the name if it contains placeholders with the matching groups.
@@ -103,24 +58,7 @@ public final class MatchContext
    * @return the translated string. It is the input string, if {@code input}
    *         does not contain any placeholders.
    */
-  public String translateName(final String input)
-  {
-    if (matcher != null && isMatched())
-    {
-      final int groupCount = matcher.groupCount();
-      if (groupCount > 0)
-      {
-        String translation = input;
-        for (int group = 1; group <= groupCount; group++)
-        {
-          final String replacement = matcher.group(group);
-          translation = translation.replace("$" + group, replacement);
-        }
-        return translation;
-      }
-    }
-    return input;
-  }
+  String translateName(String input);
 
   /**
    * Checks if the match produced at least one group match.
@@ -128,18 +66,7 @@ public final class MatchContext
    * @return <code>true</code> if at least one group is matched,
    *         <code>false</code> otherwise.
    */
-  public boolean hasGroupMatch()
-  {
-    if (matcher != null && isMatched())
-    {
-      final int groupCount = matcher.groupCount();
-      return (groupCount > 0);
-    }
-    return false;
-  }
-
-  // --- business -------------------------------------------------------------
+  boolean hasGroupMatch();
 
   // --- object basics --------------------------------------------------------
-
 }
