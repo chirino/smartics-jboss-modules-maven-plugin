@@ -151,8 +151,9 @@ public class Clusion
    * Checks id tge clusion matches the artifact.
    *
    * @param artifact the artifact to match.
-   * @return <code>true</code> if the artifact matches groupId and artifactId,
-   *         <code>false</code> otherwise.
+   * @return a context to access the match result, with <code>true</code> if the
+   *         artifact matches groupId and artifactId, <code>false</code>
+   *         otherwise.
    */
   public MatchContext matches(final Artifact artifact)
   {
