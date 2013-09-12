@@ -57,8 +57,9 @@ import org.sonatype.aether.util.graph.selector.ScopeDependencySelector;
 
 import de.smartics.maven.plugin.jboss.modules.aether.Mapper;
 import de.smartics.maven.plugin.jboss.modules.aether.MavenRepository;
-import de.smartics.maven.plugin.jboss.modules.aether.MavenResponse;
 import de.smartics.maven.plugin.jboss.modules.aether.MojoRepositoryBuilder;
+import de.smartics.maven.plugin.jboss.modules.aether.filter.DefaultTransitiveDependencyResolver;
+import de.smartics.maven.plugin.jboss.modules.aether.filter.GaExclusionFilter;
 import de.smartics.maven.plugin.jboss.modules.aether.filter.TestScopeFilter;
 import de.smartics.maven.plugin.jboss.modules.domain.ExecutionContext;
 import de.smartics.maven.plugin.jboss.modules.domain.ModuleBuilder;
@@ -216,8 +217,37 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private String defaultSlot;
 
   /**
+   * A list of dependencies to be excluded from the transitive dependency
+   * collection process.
+   *
+   * <pre>
+   *  &lt;dependencyExcludes&gt;
+   *    &lt;exclude&gt;
+   *      &lt;groupId&gt;com.sun&lt;/groupId&gt;
+   *      &lt;artifactId&gt;tools&lt;/artifactId&gt;
+   *    &lt;/exclude&gt;
+   *  &lt;/dependencyExcludes&gt;
+   * </pre>
+   */
+  @Parameter
+  private List<Clusion> dependencyExcludes;
+
+  /**
    * The module descriptors. The descriptors match dependencies in the project's
    * POM and creates a module for each.
+   *
+   * <pre>
+   * &lt;modules&gt;
+   *   &lt;module&gt;
+   *     &lt;name&gt;org.apache.commons.$1&lt;/name&gt;
+   *     &lt;includes&gt;
+   *       &lt;include&gt;
+   *         &lt;artifactId&gt;commons-(.*)&lt;/artifactId&gt;
+   *       &lt;/include&gt;
+   *     &lt;/includes&gt;
+   *   &lt;/module&gt;
+   * &lt;/modules&gt;
+   * </pre>
    *
    * @since 1.0
    */
@@ -444,10 +474,7 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private TransitiveDependencyResolver createResolver(
       final List<Dependency> managedDependencies)
   {
-    final List<DependencyFilter> dependencyFilters =
-        new ArrayList<DependencyFilter>();
-    dependencyFilters.add(new TestScopeFilter());
-
+    final List<DependencyFilter> dependencyFilters = createDependencyFilters();
     final MojoRepositoryBuilder builder = new MojoRepositoryBuilder();
     builder.with(repositorySystem).with(repositorySession).with(remoteRepos)
         .withDependencyFilters(dependencyFilters)
@@ -455,33 +482,22 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
         .build();
     final MavenRepository repository = builder.build();
 
-    return new TransitiveDependencyResolver()
-    {
-      @Override
-      public List<Dependency> resolve(final Dependency dependency)
-        throws DependencyResolutionException
-      {
-        final MavenResponse response = repository.resolve(dependency);
-        return response.getDependencies();
-      }
-
-      @Override
-      public List<Dependency> resolve(final List<Dependency> rootDependencies)
-        throws DependencyResolutionException
-      {
-        final MavenResponse response = repository.resolve(rootDependencies);
-        return response.getDependencies();
-      }
-
-      @Override
-      public List<Dependency> resolveDirect(final Dependency dependency)
-        throws DependencyResolutionException
-      {
-        final MavenResponse response = repository.resolveDirect(dependency);
-        return response.getDependencies();
-      }
-    };
+    return new DefaultTransitiveDependencyResolver(repository);
   }
-  // --- object basics --------------------------------------------------------
 
+  private List<DependencyFilter> createDependencyFilters()
+  {
+    final List<DependencyFilter> dependencyFilters =
+        new ArrayList<DependencyFilter>();
+    dependencyFilters.add(new TestScopeFilter());
+    if (dependencyExcludes != null && !dependencyExcludes.isEmpty())
+    {
+      final GaExclusionFilter filter =
+          new GaExclusionFilter(dependencyExcludes);
+      dependencyFilters.add(filter);
+    }
+    return dependencyFilters;
+  }
+
+  // --- object basics --------------------------------------------------------
 }

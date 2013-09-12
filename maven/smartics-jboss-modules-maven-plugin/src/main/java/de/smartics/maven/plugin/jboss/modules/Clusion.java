@@ -158,13 +158,13 @@ public class Clusion
   public MatchContext matches(final Artifact artifact)
   {
     final MatchContext matchesGroupId =
-        matches(groupIdPattern, groupId, artifact);
+        matches(groupIdPattern, groupId, artifact.getGroupId());
     if (matchesGroupId != null && !matchesGroupId.isMatched())
     {
       return new MatchContext(false);
     }
     final MatchContext matchesArtifactId =
-        matches(artifactIdPattern, artifactId, artifact);
+        matches(artifactIdPattern, artifactId, artifact.getArtifactId());
 
     final boolean result =
         (matchesGroupId != null && matchesGroupId.isMatched() && (matchesArtifactId == null || matchesArtifactId
@@ -176,18 +176,17 @@ public class Clusion
   }
 
   private static MatchContext matches(final Pattern pattern, final String id,
-      final Artifact artifact)
+      final String inputId)
   {
-    final String input = artifact.getArtifactId();
     if (pattern != null)
     {
-      final Matcher matcher = pattern.matcher(input);
+      final Matcher matcher = pattern.matcher(inputId);
       return new MatchContext(matcher);
     }
 
     if (StringUtils.isNotBlank(id))
     {
-      return new MatchContext(id.equals(input));
+      return new MatchContext(id.equals(inputId));
     }
 
     return null;
