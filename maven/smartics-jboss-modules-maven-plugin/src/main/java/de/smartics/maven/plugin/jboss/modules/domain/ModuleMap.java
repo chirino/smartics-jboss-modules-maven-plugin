@@ -267,8 +267,11 @@ public final class ModuleMap
 
   private void storeArtifact(final Module module, final Dependency dependency)
   {
-    module2Dependencies.put(module, dependency);
-    dependency2Module.put(new DependencyKey(dependency), module);
+    if (!module.isSkip())
+    {
+      module2Dependencies.put(module, dependency);
+      dependency2Module.put(new DependencyKey(dependency), module);
+    }
   }
 
   private Module createModule(final MatchContext matchContext,
