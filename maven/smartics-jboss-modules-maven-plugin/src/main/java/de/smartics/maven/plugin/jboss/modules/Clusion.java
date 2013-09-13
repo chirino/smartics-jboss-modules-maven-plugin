@@ -140,17 +140,8 @@ public class Clusion
 
   // --- business -------------------------------------------------------------
 
-  // --- object basics --------------------------------------------------------
-
-  @Override
-  public String toString()
-  {
-    return ObjectUtils.toString(groupId) + ':'
-           + ObjectUtils.toString(artifactId);
-  }
-
   /**
-   * Checks id tge clusion matches the artifact.
+   * Checks if the clusion matches the artifact.
    *
    * @param artifact the artifact to match.
    * @return a context to access the match result, with <code>true</code> if the
@@ -193,5 +184,14 @@ public class Clusion
     }
 
     return null;
+  }
+
+  // --- object basics --------------------------------------------------------
+
+  @Override
+  public String toString()
+  {
+    return ObjectUtils.toString(groupId) + ':'
+           + ObjectUtils.toString(artifactId);
   }
 }
