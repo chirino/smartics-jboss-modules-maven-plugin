@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>de.smartics.maven.plugin</groupId>
-  <artifactId>major-version-slots-prefix</artifactId>
+  <artifactId>slots-major-version-pure</artifactId>
   <version>testing</version>
   <packaging>pom</packaging>
 
@@ -44,7 +44,6 @@
           </execution>
         </executions>
         <configuration>
-          <defaultSlot>myProd-</defaultSlot>
           <!-- Default: <slotStrategy>version-major</slotStrategy>  -->
           <followOptionalDependencies>true</followOptionalDependencies>
           <modules>
