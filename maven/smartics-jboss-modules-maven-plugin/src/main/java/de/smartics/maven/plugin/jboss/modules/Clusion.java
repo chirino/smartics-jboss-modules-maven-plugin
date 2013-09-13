@@ -40,7 +40,7 @@ public class Clusion
   // --- members --------------------------------------------------------------
 
   /**
-   * The groupId to match. May contain wildcards (<code>*</code>).
+   * The groupId to match. May be a regular expression.
    */
   private String groupId;
 
@@ -51,7 +51,7 @@ public class Clusion
   private Pattern groupIdPattern;
 
   /**
-   * The artifactId to match. May contain wildcards (<code>*</code>).
+   * The artifactId to match. May be a regular expression.
    */
   private String artifactId;
 
@@ -81,7 +81,7 @@ public class Clusion
   // --- get&set --------------------------------------------------------------
 
   /**
-   * Returns the groupId to match. May contain a regexp.
+   * Returns the groupId to match. May be a regular expression.
    *
    * @return the groupId to match.
    */
@@ -91,7 +91,7 @@ public class Clusion
   }
 
   /**
-   * Sets the groupId to match. May contain a regexp.
+   * Sets the groupId to match.May be a regular expression.
    *
    * @param groupId the groupId to match.
    */
@@ -118,7 +118,7 @@ public class Clusion
   }
 
   /**
-   * Returns the artifactId to match. May contain a regexp.
+   * Returns the artifactId to match. May be a regular expression.
    *
    * @return the artifactId to match.
    */
@@ -128,7 +128,7 @@ public class Clusion
   }
 
   /**
-   * Sets the artifactId to match. May contain a regexp.
+   * Sets the artifactId to match. May be a regular expression.
    *
    * @param artifactId the artifactId to match.
    */
