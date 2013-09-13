@@ -30,3 +30,12 @@ def resourceRoots = module.resources."resource-root"
 assert 1 == resourceRoots.size()
 assert 'commons-lang-2.6.jar' == resourceRoots[0].@path.text()
 
+/*
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns="urn:jboss:module:1.1" name="org.apache.commons.lang">
+  <resources>
+    <resource-root path="commons-lang-2.6.jar" />
+  </resources>
+  <dependencies />
+</module>
+*/
