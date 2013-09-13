@@ -15,6 +15,7 @@
  */
 package de.smartics.maven.plugin.jboss.modules;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -88,6 +89,34 @@ public class Module
    * dependency to an existing module in JBoss, but not to create a module.
    */
   private boolean skip;
+
+  /**
+   * The list of dependencies to export. If the list is empty, everything is
+   * included (and those in the <code>exportExcludes</code> list are excluded.
+   * If it is not empty, only those that match are included (as long as they are
+   * not also matching a member of the excludes list).
+   * <p>
+   * If you want to exclude everything, add a member non of your dependencies
+   * match.
+   * </p>
+   */
+  private List<String> exportIncludes;
+
+  /**
+   * The export includes as precompiled expressions.
+   */
+  private List<Expression> exportIncludeExpressions;
+
+  /**
+   * The list of dependencies to exclude from export. If this list is empty,
+   * nothing is excluded.
+   */
+  private List<String> exportExcludes;
+
+  /**
+   * The export excludes as precompiled expressions.
+   */
+  private List<Expression> exportExcludeExpressions;
 
   // ****************************** Initializer *******************************
 
@@ -291,6 +320,98 @@ public class Module
     this.dependencies = dependencies;
   }
 
+  /**
+   * Returns the flag to skip the export of the module. This allows to rename a
+   * dependency to an existing module in JBoss, but not to create a module.
+   *
+   * @return the flag to skip the export of the module.
+   */
+  public boolean isSkip()
+  {
+    return skip;
+  }
+
+  /**
+   * Sets the flag to skip the export of the module. This allows to rename a
+   * dependency to an existing module in JBoss, but not to create a module.
+   *
+   * @param skip the flag to skip the export of the module.
+   */
+  public void setSkip(final boolean skip)
+  {
+    this.skip = skip;
+  }
+
+  /**
+   * Returns the list of dependencies to export. If the list is empty,
+   * everything is included (and those in the <code>exportExcludes</code> list
+   * are excluded. If it is not empty, only those that match are included (as
+   * long as they are not also matching a member of the excludes list).
+   * <p>
+   * If you want to exclude everything, add a member non of your dependencies
+   * match.
+   * </p>
+   *
+   * @return the list of dependencies to export.
+   */
+  public List<String> getExportIncludes()
+  {
+    return exportIncludes;
+  }
+
+  /**
+   * Sets the list of dependencies to export. If the list is empty, everything
+   * is included (and those in the <code>exportExcludes</code> list are
+   * excluded. If it is not empty, only those that match are included (as long
+   * as they are not also matching a member of the excludes list).
+   * <p>
+   * If you want to exclude everything, add a member non of your dependencies
+   * match.
+   * </p>
+   *
+   * @param exportIncludes the list of dependencies to export.
+   */
+  public void setExportIncludes(final List<String> exportIncludes)
+  {
+    this.exportIncludes = exportIncludes;
+    this.exportIncludeExpressions =
+        new ArrayList<Expression>(exportIncludes.size());
+    for (final String include : exportIncludes)
+    {
+      final Expression expression = new Expression(include);
+      exportIncludeExpressions.add(expression);
+    }
+  }
+
+  /**
+   * Returns the list of dependencies to exclude from export. If this list is
+   * empty, nothing is excluded.
+   *
+   * @return the list of dependencies to exclude from export.
+   */
+  public List<String> getExportExcludes()
+  {
+    return exportExcludes;
+  }
+
+  /**
+   * Sets the list of dependencies to exclude from export. If this list is
+   * empty, nothing is excluded.
+   *
+   * @param exportExcludes the list of dependencies to exclude from export.
+   */
+  public void setExportExcludes(final List<String> exportExcludes)
+  {
+    this.exportExcludes = exportExcludes;
+    this.exportExcludeExpressions =
+        new ArrayList<Expression>(exportExcludes.size());
+    for (final String exclude : exportExcludes)
+    {
+      final Expression expression = new Expression(exclude);
+      exportExcludeExpressions.add(expression);
+    }
+  }
+
   // --- business -------------------------------------------------------------
 
   /**
@@ -335,25 +456,53 @@ public class Module
   }
 
   /**
-   * Returns the flag to skip the export of the module. This allows to rename a
-   * dependency to an existing module in JBoss, but not to create a module.
+   * Checks whether the given module should be exported.
    *
-   * @return the flag to skip the export of the module.
+   * @param moduleName the name of the module to check for export.
+   * @return <code>true</code> if the module is to be exported,
+   *         <code>false</code> otherwise.
    */
-  public boolean isSkip()
+  public boolean isExport(final String moduleName)
   {
-    return skip;
+    if (exportIncludeExpressions == null && exportExcludeExpressions == null)
+    {
+      return false;
+    }
+
+    if (exportIncludeExpressions == null || exportIncludeExpressions.isEmpty())
+    {
+      final boolean match = match(exportExcludeExpressions, moduleName);
+      return !match;
+    }
+
+    final boolean includeMatch = match(exportIncludeExpressions, moduleName);
+    if (includeMatch)
+    {
+      final boolean excludeMatch = match(exportExcludeExpressions, moduleName);
+      return !excludeMatch;
+    }
+
+    return includeMatch;
   }
 
-  /**
-   * Sets the flag to skip the export of the module. This allows to rename a
-   * dependency to an existing module in JBoss, but not to create a module.
-   *
-   * @param skip the flag to skip the export of the module.
-   */
-  public void setSkip(final boolean skip)
+  private boolean match(final List<Expression> expressions,
+      final String moduleName)
   {
-    this.skip = skip;
+    if (expressions == null)
+    {
+      return false;
+    }
+
+    for (final Expression expression : expressions)
+    {
+      final boolean match = expression.matches(moduleName);
+      if (match)
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // --- object basics --------------------------------------------------------

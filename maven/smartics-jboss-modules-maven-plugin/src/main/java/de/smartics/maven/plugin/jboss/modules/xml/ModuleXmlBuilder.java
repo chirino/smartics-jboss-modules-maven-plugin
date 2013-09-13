@@ -284,6 +284,11 @@ public final class ModuleXmlBuilder
       {
         moduleElement.setAttribute("optional", "true");
       }
+      if (module.isExport(name))
+      {
+        moduleElement.setAttribute("export", "true");
+      }
+
       final SlotStrategy slotStrategy = context.getSlotStrategy();
       final Dependency dependency = element.dependency;
       final String slot =
