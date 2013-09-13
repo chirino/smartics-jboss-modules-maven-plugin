@@ -285,12 +285,12 @@ public final class ModuleXmlBuilder
         moduleElement.setAttribute("optional", "true");
       }
       final SlotStrategy slotStrategy = context.getSlotStrategy();
-      if (slotStrategy != SlotStrategy.MAIN)
+      final Dependency dependency = element.dependency;
+      final String slot =
+          slotStrategy.calcSlot(dependency.getArtifact(),
+              context.getDefaultSlot());
+      if (!SlotStrategy.MAIN_SLOT.equals(slot))
       {
-        final Dependency dependency = element.dependency;
-        final String slot =
-            slotStrategy.calcSlot(dependency.getArtifact(),
-                context.getDefaultSlot());
         moduleElement.setAttribute("slot", slot);
       }
       dependenciesElement.addContent(moduleElement);
