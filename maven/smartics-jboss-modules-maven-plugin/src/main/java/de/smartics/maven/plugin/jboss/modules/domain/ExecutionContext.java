@@ -58,6 +58,11 @@ public final class ExecutionContext
   private final SlotStrategy slotStrategy;
 
   /**
+   * The name of the default slot to write to.
+   */
+  private final String defaultSlot;
+
+  /**
    * The map of modules encountered so far.
    */
   private final ModuleMap moduleMap;
@@ -72,6 +77,7 @@ public final class ExecutionContext
     this.targetFolder = builder.targetFolder;
     this.resolver = builder.resolver;
     this.slotStrategy = builder.slotStrategy;
+    this.defaultSlot = builder.defaultSlot;
     this.moduleMap = builder.moduleMap;
   }
 
@@ -107,6 +113,11 @@ public final class ExecutionContext
      * The slot strategy for modules.
      */
     private SlotStrategy slotStrategy;
+
+    /**
+     * The name of the default slot to write to.
+     */
+    private String defaultSlot;
 
     /**
      * The map of modules encountered so far.
@@ -170,6 +181,18 @@ public final class ExecutionContext
     public Builder with(final SlotStrategy slotStrategy)
     {
       this.slotStrategy = slotStrategy;
+      return this;
+    }
+
+    /**
+     * Sets the name of the default slot to write to.
+     *
+     * @param defaultSlot the name of the default slot to write to.
+     * @return a reference to this builder.
+     */
+    public Builder withDefaultSlot(final String defaultSlot)
+    {
+      this.defaultSlot = defaultSlot;
       return this;
     }
 
@@ -251,6 +274,16 @@ public final class ExecutionContext
   public SlotStrategy getSlotStrategy()
   {
     return slotStrategy;
+  }
+
+  /**
+   * Returns the name of the default slot to write to.
+   *
+   * @return the name of the default slot to write to.
+   */
+  public String getDefaultSlot()
+  {
+    return defaultSlot;
   }
 
   /**

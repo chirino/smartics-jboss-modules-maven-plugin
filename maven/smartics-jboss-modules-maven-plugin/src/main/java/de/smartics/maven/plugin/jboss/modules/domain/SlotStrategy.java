@@ -15,6 +15,7 @@
  */
 package de.smartics.maven.plugin.jboss.modules.domain;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.sonatype.aether.artifact.Artifact;
@@ -101,19 +102,42 @@ public enum SlotStrategy
   /**
    * Calculates the name for the slot.
    *
-   * @param artifact the artifact with additional information.
+   * @param artifact the artifact with additional information. If
+   *          <code>null</code>: a static prefix will be assumed.
+   * @param defaultSlot the name of the default slot to use.
    * @return the name of the slot.
    */
-  public String calcSlot(final Artifact artifact)
+  public String calcSlot(final Artifact artifact, final String defaultSlot)
   {
     if (this == VERSION_MAJOR)
     {
-      final String versionString = artifact.getVersion();
+      final String versionString = calcVersion(artifact);
       final ArtifactVersion version = new DefaultArtifactVersion(versionString);
       final int majorVersion = version.getMajorVersion();
-      return String.valueOf(majorVersion);
+      final String slot;
+      if (!(StringUtils.isBlank(defaultSlot) || MAIN_SLOT.equals(defaultSlot)))
+      {
+        slot = defaultSlot + majorVersion;
+      }
+      else
+      {
+        slot = String.valueOf(majorVersion);
+      }
+      return slot;
     }
 
-    return MAIN_SLOT;
+    return StringUtils.isBlank(defaultSlot) ? MAIN_SLOT : defaultSlot;
+  }
+
+  private String calcVersion(final Artifact artifact)
+  {
+    if (artifact != null)
+    {
+      return artifact.getVersion();
+    }
+    else
+    {
+      return "VersionX";
+    }
   }
 }

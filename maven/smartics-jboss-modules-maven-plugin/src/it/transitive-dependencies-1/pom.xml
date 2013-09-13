@@ -42,6 +42,7 @@
           </execution>
         </executions>
         <configuration>
+          <slotStrategy>main</slotStrategy>
           <modules>
             <module>
               <name>org.apache.commons.$1</name>

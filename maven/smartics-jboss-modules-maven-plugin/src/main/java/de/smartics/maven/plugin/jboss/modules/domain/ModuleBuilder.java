@@ -138,7 +138,7 @@ public final class ModuleBuilder
       if (!dependencies.isEmpty())
       {
         final Artifact artifact = dependencies.get(0).getArtifact();
-        slot = strategy.calcSlot(artifact);
+        slot = strategy.calcSlot(artifact, context.getDefaultSlot());
       }
       else
       {

@@ -99,8 +99,8 @@ public final class ModuleXmlBuilder
 
     root = new Element("module", NS);
     root.setAttribute("name", module.getName());
-    final String slot = module.getSlot();
-    if (StringUtils.isNotBlank(slot))
+    final String slot = calcSlot(context, module, dependencies);
+    if (StringUtils.isNotBlank(slot) && !SlotStrategy.MAIN_SLOT.equals(slot))
     {
       root.setAttribute("slot", slot);
     }
@@ -141,6 +141,40 @@ public final class ModuleXmlBuilder
   // ********************************* Methods ********************************
 
   // --- init -----------------------------------------------------------------
+
+  private static String calcSlot(final ExecutionContext context,
+      final Module module, final Collection<Dependency> dependencies)
+  {
+    final String specifiedSlot = module.getSlot();
+    if (StringUtils.isNotBlank(specifiedSlot))
+    {
+      return specifiedSlot;
+    }
+
+    final String defaultSlot = context.getDefaultSlot();
+    final SlotStrategy strategy = context.getSlotStrategy();
+    if (SlotStrategy.VERSION_MAJOR == strategy)
+    {
+      final Artifact artifact = calcArtifact(dependencies);
+      final String slot = strategy.calcSlot(artifact, defaultSlot);
+      return slot;
+    }
+    else
+    {
+      return defaultSlot;
+    }
+  }
+
+  private static Artifact calcArtifact(final Collection<Dependency> dependencies)
+  {
+    if (dependencies != null && !dependencies.isEmpty())
+    {
+      final Dependency dependency = dependencies.iterator().next();
+      final Artifact artifact = dependency.getArtifact();
+      return artifact;
+    }
+    return null;
+  }
 
   // --- get&set --------------------------------------------------------------
 
@@ -253,8 +287,10 @@ public final class ModuleXmlBuilder
       final SlotStrategy slotStrategy = context.getSlotStrategy();
       if (slotStrategy != SlotStrategy.MAIN)
       {
+        final Dependency dependency = element.dependency;
         final String slot =
-            slotStrategy.calcSlot(element.dependency.getArtifact());
+            slotStrategy.calcSlot(dependency.getArtifact(),
+                context.getDefaultSlot());
         moduleElement.setAttribute("slot", slot);
       }
       dependenciesElement.addContent(moduleElement);

@@ -208,13 +208,42 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private boolean followOptionalDependencies;
 
   /**
-   * The name of the default slot to write to. If not specified, the major
-   * version of the dependency will be used as slot value.
+   * The name of the default slot to write to. See <code>slotStrategy</code>.
    *
    * @since 1.0
+   * @see #slotStrategy
    */
   @Parameter(defaultValue = "main")
   private String defaultSlot;
+
+  /**
+   * The name of the slot strategy to us. If not specified, the major version of
+   * the dependency will be used as slot value.
+   * <p>
+   * Possible values are:
+   * </p>
+   * <table>
+   * <tr>
+   * <th>value</th>
+   * <th>description</th>
+   * </tr>
+   * <tr>
+   * <td>version-major</td>
+   * <td>The slot has the major number of the version. The
+   * <code>defaultSlot</code> is prepended, if not set to <code>main</code>
+   * (e.g. <code>defaultSlot</code>=prodx and version 1.2.3 then the slot will
+   * be named prodx1.</td>
+   * </tr>
+   * <tr>
+   * <td>main</td>
+   * <td>The slot has the name as given with <code>defaultSlot</code>.</td>
+   * </tr>
+   * </table>
+   *
+   * @since 1.0
+   */
+  @Parameter(defaultValue = "version-major")
+  private String slotStrategy;
 
   /**
    * A list of dependencies to be excluded from the transitive dependency
@@ -406,8 +435,10 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
     final TransitiveDependencyResolver resolver = createResolver(dependencies);
     builder.with(resolver);
 
-    final SlotStrategy slotStrategy = SlotStrategy.fromString(this.defaultSlot);
+    final SlotStrategy slotStrategy =
+        SlotStrategy.fromString(this.slotStrategy);
     builder.with(slotStrategy);
+    builder.withDefaultSlot(defaultSlot);
 
     final ModuleMap moduleMap = new ModuleMap(modules, dependencies);
     builder.with(moduleMap);
