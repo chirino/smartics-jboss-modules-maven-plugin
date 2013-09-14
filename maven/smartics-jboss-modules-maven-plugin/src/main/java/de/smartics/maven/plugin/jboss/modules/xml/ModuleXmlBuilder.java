@@ -100,7 +100,8 @@ public final class ModuleXmlBuilder
     root = new Element("module", NS);
     root.setAttribute("name", module.getName());
     final String slot = calcSlot(context, module, dependencies);
-    if (StringUtils.isNotBlank(slot) && !SlotStrategy.MAIN_SLOT.equals(slot))
+
+    if (StringUtils.isNotBlank(slot))
     {
       root.setAttribute("slot", slot);
     }
@@ -148,6 +149,11 @@ public final class ModuleXmlBuilder
     final String specifiedSlot = module.getSlot();
     if (StringUtils.isNotBlank(specifiedSlot))
     {
+      if (SlotStrategy.MAIN_SLOT.equals(specifiedSlot))
+      {
+        return null;
+      }
+
       return specifiedSlot;
     }
 
@@ -161,6 +167,10 @@ public final class ModuleXmlBuilder
     }
     else
     {
+      if (SlotStrategy.MAIN_SLOT.equals(defaultSlot))
+      {
+        return null;
+      }
       return defaultSlot;
     }
   }
@@ -291,15 +301,37 @@ public final class ModuleXmlBuilder
 
       final SlotStrategy slotStrategy = context.getSlotStrategy();
       final Dependency dependency = element.dependency;
+      final String defaultSlot = calcDefaultSlot(module, dependency);
       final String slot =
-          slotStrategy.calcSlot(dependency.getArtifact(),
-              context.getDefaultSlot());
-      if (!SlotStrategy.MAIN_SLOT.equals(slot))
+          slotStrategy.calcSlot(dependency.getArtifact(), defaultSlot);
+      if (!SlotStrategy.MAIN_SLOT.equals(slot)
+          || (StringUtils.isNotBlank(module.getSlot()) && !slot.equals(module
+              .getSlot())))
       {
         moduleElement.setAttribute("slot", slot);
       }
       dependenciesElement.addContent(moduleElement);
     }
+  }
+
+  private String calcDefaultSlot(final Module module,
+      final Dependency dependency)
+  {
+    final Module depModule = context.getModule(dependency);
+    final String depModuleSlot = depModule.getSlot();
+    if (StringUtils.isNotBlank(depModuleSlot))
+    {
+      return depModuleSlot;
+    }
+
+    final String moduleSlot = module.getSlot();
+    if (StringUtils.isNotBlank(moduleSlot))
+    {
+      return moduleSlot;
+    }
+
+    final String defaultSlot = context.getDefaultSlot();
+    return defaultSlot;
   }
 
   private void addStaticDependencies(final Module module,

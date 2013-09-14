@@ -25,6 +25,8 @@ def module = new XmlSlurper().parse(modulesFile)
 
 def name = module.@name.text()
 assert 'org.apache.commons.lang' == name
+def slot = module.@slot.text()
+assert '' == slot
 
 def resourceRoots = module.resources."resource-root"
 assert 1 == resourceRoots.size()
