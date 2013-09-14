@@ -15,7 +15,6 @@
  */
 package de.smartics.maven.plugin.jboss.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,32 +90,10 @@ public class Module
   private boolean skip;
 
   /**
-   * The list of dependencies to export. If the list is empty, everything is
-   * included (and those in the <code>exportExcludes</code> list are excluded.
-   * If it is not empty, only those that match are included (as long as they are
-   * not also matching a member of the excludes list).
-   * <p>
-   * If you want to exclude everything, add a member non of your dependencies
-   * match.
-   * </p>
+   * The set of module names (using regular expressions) to match to be flagged
+   * to be exported.
    */
-  private List<String> exportIncludes;
-
-  /**
-   * The export includes as precompiled expressions.
-   */
-  private List<Expression> exportIncludeExpressions;
-
-  /**
-   * The list of dependencies to exclude from export. If this list is empty,
-   * nothing is excluded.
-   */
-  private List<String> exportExcludes;
-
-  /**
-   * The export excludes as precompiled expressions.
-   */
-  private List<Expression> exportExcludeExpressions;
+  private Export export;
 
   // ****************************** Initializer *******************************
 
@@ -343,73 +320,27 @@ public class Module
   }
 
   /**
-   * Returns the list of dependencies to export. If the list is empty,
-   * everything is included (and those in the <code>exportExcludes</code> list
-   * are excluded. If it is not empty, only those that match are included (as
-   * long as they are not also matching a member of the excludes list).
-   * <p>
-   * If you want to exclude everything, add a member non of your dependencies
-   * match.
-   * </p>
+   * Returns the set of module names (using regular expressions) to match to be
+   * flagged to be exported.
    *
-   * @return the list of dependencies to export.
+   * @return the set of module names (using regular expressions) to match to be
+   *         flagged to be exported.
    */
-  public List<String> getExportIncludes()
+  public Export getExport()
   {
-    return exportIncludes;
+    return export;
   }
 
   /**
-   * Sets the list of dependencies to export. If the list is empty, everything
-   * is included (and those in the <code>exportExcludes</code> list are
-   * excluded. If it is not empty, only those that match are included (as long
-   * as they are not also matching a member of the excludes list).
-   * <p>
-   * If you want to exclude everything, add a member non of your dependencies
-   * match.
-   * </p>
+   * Sets the set of module names (using regular expressions) to match to be
+   * flagged to be exported.
    *
-   * @param exportIncludes the list of dependencies to export.
+   * @param export the set of module names (using regular expressions) to match
+   *          to be flagged to be exported.
    */
-  public void setExportIncludes(final List<String> exportIncludes)
+  public void setExport(final Export export)
   {
-    this.exportIncludes = exportIncludes;
-    this.exportIncludeExpressions =
-        new ArrayList<Expression>(exportIncludes.size());
-    for (final String include : exportIncludes)
-    {
-      final Expression expression = new Expression(include);
-      exportIncludeExpressions.add(expression);
-    }
-  }
-
-  /**
-   * Returns the list of dependencies to exclude from export. If this list is
-   * empty, nothing is excluded.
-   *
-   * @return the list of dependencies to exclude from export.
-   */
-  public List<String> getExportExcludes()
-  {
-    return exportExcludes;
-  }
-
-  /**
-   * Sets the list of dependencies to exclude from export. If this list is
-   * empty, nothing is excluded.
-   *
-   * @param exportExcludes the list of dependencies to exclude from export.
-   */
-  public void setExportExcludes(final List<String> exportExcludes)
-  {
-    this.exportExcludes = exportExcludes;
-    this.exportExcludeExpressions =
-        new ArrayList<Expression>(exportExcludes.size());
-    for (final String exclude : exportExcludes)
-    {
-      final Expression expression = new Expression(exclude);
-      exportExcludeExpressions.add(expression);
-    }
+    this.export = export;
   }
 
   // --- business -------------------------------------------------------------
@@ -456,53 +387,19 @@ public class Module
   }
 
   /**
-   * Checks whether the given module should be exported.
+   * Checks whether the module with the given name is to be exported or not.
    *
-   * @param moduleName the name of the module to check for export.
+   * @param moduleName the name of the module to check.
    * @return <code>true</code> if the module is to be exported,
    *         <code>false</code> otherwise.
    */
   public boolean isExport(final String moduleName)
   {
-    if (exportIncludeExpressions == null && exportExcludeExpressions == null)
+    if (export == null)
     {
       return false;
     }
-
-    if (exportIncludeExpressions == null || exportIncludeExpressions.isEmpty())
-    {
-      final boolean match = match(exportExcludeExpressions, moduleName);
-      return !match;
-    }
-
-    final boolean includeMatch = match(exportIncludeExpressions, moduleName);
-    if (includeMatch)
-    {
-      final boolean excludeMatch = match(exportExcludeExpressions, moduleName);
-      return !excludeMatch;
-    }
-
-    return includeMatch;
-  }
-
-  private boolean match(final List<Expression> expressions,
-      final String moduleName)
-  {
-    if (expressions == null)
-    {
-      return false;
-    }
-
-    for (final Expression expression : expressions)
-    {
-      final boolean match = expression.matches(moduleName);
-      if (match)
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return export.isExport(moduleName);
   }
 
   // --- object basics --------------------------------------------------------

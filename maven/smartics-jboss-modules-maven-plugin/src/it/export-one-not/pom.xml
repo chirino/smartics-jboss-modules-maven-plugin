@@ -53,9 +53,11 @@
                   <artifactId>commons-configuration</artifactId>
                 </include>
               </includes>
-              <exportExcludes>
-                <exclude>org.apache.commons.lang</exclude>
-              </exportExcludes>
+              <export>
+                <excludes>
+                  <exclude>org.apache.commons.lang</exclude>
+                </excludes>
+              </export>
             </module>
             <module>
               <name>org.apache.commons.$1</name>

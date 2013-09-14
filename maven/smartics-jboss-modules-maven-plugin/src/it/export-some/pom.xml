@@ -53,9 +53,11 @@
                   <artifactId>commons-configuration</artifactId>
                 </include>
               </includes>
-              <exportIncludes>
-                <include>org.apache.commons..+</include>
-              </exportIncludes>
+              <export>
+                <includes>
+                  <include>org.apache.commons..+</include>
+                </includes>
+              </export>
             </module>
             <module>
               <name>org.apache.commons.$1</name>
