@@ -284,6 +284,13 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
   private List<Module> modules;
 
   /**
+   * A flag to override that every dependency of every module is to be exported
+   * regardless of any individual module settings.
+   */
+  @Parameter(defaultValue = "false")
+  private boolean exportAll;
+
+  /**
    * The folder to write the module structure to.
    *
    * @since 1.0
@@ -442,6 +449,7 @@ public final class JBossModulesArchiveMojo extends AbstractMojo
 
     final ModuleMap moduleMap = new ModuleMap(modules, dependencies);
     builder.with(moduleMap);
+    builder.withExportAll(exportAll);
 
     if (verbose)
     {

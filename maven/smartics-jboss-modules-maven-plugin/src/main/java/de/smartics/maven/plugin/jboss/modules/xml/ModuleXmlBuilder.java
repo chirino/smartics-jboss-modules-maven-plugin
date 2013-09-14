@@ -338,6 +338,7 @@ public final class ModuleXmlBuilder
     return defaultSlot;
   }
 
+  // CHECKSTYLE:OFF
   private void addStaticDependencies(final Module module,
       final Element dependenciesElement)
   {
@@ -360,7 +361,7 @@ public final class ModuleXmlBuilder
         {
           moduleElement.setAttribute("slot", slot);
         }
-        if (dependency.isExport())
+        if (context.isExportAll() || dependency.isExport())
         {
           moduleElement.setAttribute("export", "true");
         }
@@ -377,6 +378,7 @@ public final class ModuleXmlBuilder
       }
     }
   }
+  // CHECKSTYLE:ON
 
   private void addSortedDependencies(final Set<SortElement> sorted,
       final Module owningModule, final List<Dependency> dependencies)

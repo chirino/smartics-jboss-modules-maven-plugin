@@ -67,6 +67,12 @@ public final class ExecutionContext
    */
   private final ModuleMap moduleMap;
 
+  /**
+   * A flag to override that every dependency of every module is to be exported
+   * regardless of any individual module settings.
+   */
+  private final boolean exportAll;
+
   // ****************************** Initializer *******************************
 
   // ****************************** Constructors ******************************
@@ -79,6 +85,7 @@ public final class ExecutionContext
     this.slotStrategy = builder.slotStrategy;
     this.defaultSlot = builder.defaultSlot;
     this.moduleMap = builder.moduleMap;
+    this.exportAll = builder.exportAll;
   }
 
   // ****************************** Inner Classes *****************************
@@ -123,6 +130,12 @@ public final class ExecutionContext
      * The map of modules encountered so far.
      */
     private ModuleMap moduleMap;
+
+    /**
+     * A flag to override that every dependency of every module is to be
+     * exported regardless of any individual module settings.
+     */
+    private boolean exportAll;
 
     // ***************************** Initializer ******************************
 
@@ -205,6 +218,20 @@ public final class ExecutionContext
     public Builder with(final ModuleMap moduleMap)
     {
       this.moduleMap = moduleMap;
+      return this;
+    }
+
+    /**
+     * Sets a flag to override that every dependency of every module is to be
+     * exported regardless of any individual module settings.
+     *
+     * @param exportAll a flag to override that every dependency of every module
+     *          is to be exported regardless of any individual module settings.
+     * @return a reference to this builder.
+     */
+    public Builder withExportAll(final boolean exportAll)
+    {
+      this.exportAll = exportAll;
       return this;
     }
 
@@ -294,6 +321,18 @@ public final class ExecutionContext
   public ModuleMap getModuleMap()
   {
     return moduleMap;
+  }
+
+  /**
+   * Returns a flag to override that every dependency of every module is to be
+   * exported regardless of any individual module settings.
+   *
+   * @return a flag to override that every dependency of every module is to be
+   *         exported regardless of any individual module settings.
+   */
+  public boolean isExportAll()
+  {
+    return exportAll;
   }
 
   // --- business -------------------------------------------------------------
