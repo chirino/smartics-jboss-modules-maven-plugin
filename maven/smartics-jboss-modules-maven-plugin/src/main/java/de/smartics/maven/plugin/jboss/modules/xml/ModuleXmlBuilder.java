@@ -100,8 +100,7 @@ public final class ModuleXmlBuilder
     root = new Element("module", NS);
     root.setAttribute("name", module.getName());
     final String slot = calcSlot(context, module, dependencies);
-
-    if (StringUtils.isNotBlank(slot))
+    if (!SlotStrategy.MAIN_SLOT.equals(slot))
     {
       root.setAttribute("slot", slot);
     }
@@ -149,11 +148,6 @@ public final class ModuleXmlBuilder
     final String specifiedSlot = module.getSlot();
     if (StringUtils.isNotBlank(specifiedSlot))
     {
-      if (SlotStrategy.MAIN_SLOT.equals(specifiedSlot))
-      {
-        return null;
-      }
-
       return specifiedSlot;
     }
 
@@ -167,10 +161,6 @@ public final class ModuleXmlBuilder
     }
     else
     {
-      if (SlotStrategy.MAIN_SLOT.equals(defaultSlot))
-      {
-        return null;
-      }
       return defaultSlot;
     }
   }
