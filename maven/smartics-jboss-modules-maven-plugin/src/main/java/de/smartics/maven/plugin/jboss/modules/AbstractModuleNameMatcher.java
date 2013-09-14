@@ -154,7 +154,7 @@ public abstract class AbstractModuleNameMatcher
    * @return <code>true</code> if the module is to be exported,
    *         <code>false</code> otherwise.
    */
-  public boolean isExport(final String moduleName)
+  public boolean isMatched(final String moduleName)
   {
     if (includeExpressions == null && excludeExpressions == null)
     {

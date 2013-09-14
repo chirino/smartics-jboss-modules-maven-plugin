@@ -95,6 +95,11 @@ public class Module
    */
   private Export export;
 
+  /**
+   * The export/import of services.
+   */
+  private List<Services> port;
+
   // ****************************** Initializer *******************************
 
   // ****************************** Constructors ******************************
@@ -343,6 +348,26 @@ public class Module
     this.export = export;
   }
 
+  /**
+   * Returns the export/import of services.
+   *
+   * @return the export/import of services.
+   */
+  public List<Services> getPort()
+  {
+    return port;
+  }
+
+  /**
+   * Sets the export/import of services.
+   *
+   * @param port the export/import of services.
+   */
+  public void setPort(final List<Services> port)
+  {
+    this.port = port;
+  }
+
   // --- business -------------------------------------------------------------
 
   /**
@@ -399,7 +424,28 @@ public class Module
     {
       return false;
     }
-    return export.isExport(moduleName);
+    return export.isMatched(moduleName);
+  }
+
+  /**
+   * Returns the service flag for the given module.
+   *
+   * @param moduleName the name of the module.
+   * @return the service flag information.
+   */
+  public String getService(final String moduleName)
+  {
+    if (port != null)
+    {
+      for (final Services services : port)
+      {
+        if (services.isMatched(moduleName))
+        {
+          return services.getValue();
+        }
+      }
+    }
+    return Services.NONE;
   }
 
   // --- object basics --------------------------------------------------------

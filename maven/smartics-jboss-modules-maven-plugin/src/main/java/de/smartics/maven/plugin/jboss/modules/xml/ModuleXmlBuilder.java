@@ -32,6 +32,7 @@ import org.sonatype.aether.artifact.Artifact;
 import org.sonatype.aether.graph.Dependency;
 
 import de.smartics.maven.plugin.jboss.modules.Module;
+import de.smartics.maven.plugin.jboss.modules.Services;
 import de.smartics.maven.plugin.jboss.modules.domain.ExecutionContext;
 import de.smartics.maven.plugin.jboss.modules.domain.SlotStrategy;
 import edu.emory.mathcs.backport.java.util.Collections;
@@ -268,12 +269,8 @@ public final class ModuleXmlBuilder
       final Collection<Dependency> dependencies,
       final Element dependenciesElement)
   {
-    final Set<SortElement> sorted = new TreeSet<SortElement>();
-    for (final Dependency dependency : dependencies)
-    {
-      final List<Dependency> resolvedDependencies = context.resolve(dependency);
-      addSortedDependencies(sorted, module, resolvedDependencies);
-    }
+    final Set<SortElement> sorted =
+        createSortedDependencies(module, dependencies);
 
     for (final SortElement element : sorted)
     {
@@ -287,6 +284,11 @@ public final class ModuleXmlBuilder
       if (module.isExport(name))
       {
         moduleElement.setAttribute("export", "true");
+      }
+      final String services = module.getService(name);
+      if (!Services.NONE.equals(services))
+      {
+        moduleElement.setAttribute("services", services);
       }
 
       final SlotStrategy slotStrategy = context.getSlotStrategy();
@@ -302,6 +304,18 @@ public final class ModuleXmlBuilder
       }
       dependenciesElement.addContent(moduleElement);
     }
+  }
+
+  private Set<SortElement> createSortedDependencies(final Module module,
+      final Collection<Dependency> dependencies)
+  {
+    final Set<SortElement> sorted = new TreeSet<SortElement>();
+    for (final Dependency dependency : dependencies)
+    {
+      final List<Dependency> resolvedDependencies = context.resolve(dependency);
+      addSortedDependencies(sorted, module, resolvedDependencies);
+    }
+    return sorted;
   }
 
   private String calcDefaultSlot(final Module module,
