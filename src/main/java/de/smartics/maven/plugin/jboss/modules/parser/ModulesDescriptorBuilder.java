@@ -253,11 +253,13 @@ final class ModulesDescriptorBuilder
     }
 
     final String slot = applyElement.getChildText("slot", NS);
+    final String skip = applyElement.getChildText("skip", NS);
     final String export = applyElement.getChildText("export", NS);
     final String services = applyElement.getChildText("services", NS);
     final String optional = applyElement.getChildText("optional", NS);
 
     builder.withSlot(slot);
+    builder.withSkip(skip);
     builder.withExport(export);
     builder.withServices(services);
     builder.withOptional(optional);

@@ -334,7 +334,9 @@ public final class ModuleXmlBuilder
       handleExport(moduleElement, dd);
       handleServices(moduleElement, dd);
       handleSlot(module, element, moduleElement);
-      dependenciesElement.addContent(moduleElement);
+      if( dd.getSkip() == null || dd.getSkip()==false ) {
+          dependenciesElement.addContent(moduleElement);
+      }
     }
   }
 
