@@ -298,6 +298,7 @@
         </executions>
         <configuration>
           <excludes>
+            <exclude>**/.idea/**</exclude>
             <exclude>**/.externalToolBuilders/**</exclude>
             <exclude>**/.factorypath</exclude>
             <exclude>**/.apt_generated/**</exclude>
@@ -428,4 +429,30 @@
       </build>
     </profile>
   </profiles>
+  
+    <repositories>
+      <repository>
+        <id>smartics</id>
+        <url>http://www.smartics.eu/nexus/content/groups/public-group</url>
+        <releases>
+          <enabled>true</enabled>
+        </releases>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </repository>
+    </repositories>
+    <pluginRepositories>
+      <pluginRepository>
+        <id>smartics</id>
+        <url>http://www.smartics.eu/nexus/content/groups/public-group</url>
+        <releases>
+          <enabled>true</enabled>
+        </releases>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </pluginRepository>
+    </pluginRepositories>
+      
 </project>
